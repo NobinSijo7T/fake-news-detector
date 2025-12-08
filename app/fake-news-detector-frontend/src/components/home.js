@@ -48,20 +48,24 @@ function Home() {
   const fetchLiveNewsData = () => {
     Axios.get('http://127.0.0.1:8000/api/live/')
       .then((response) => {
-        setLiveNewsData(response.data);
-        console.log(response.data);
+        if (response.data && response.data.length > 0) {
+          setLiveNewsData(response.data);
+          console.log('Live news fetched:', response.data.length, 'articles');
+        }
       })
       .catch((error) => {
-        console.error('Error', error);
+        console.error('Error fetching live news:', error);
       });
     
     Axios.get('http://127.0.0.1:8000/api/category/News/')
     .then((response) => {
-      setMustSeeNews(response.data);
-      console.log(response.data);
+      if (response.data && response.data.length > 0) {
+        setMustSeeNews(response.data);
+        console.log('Must see news fetched:', response.data.length, 'articles');
+      }
     })
     .catch((error) => {
-      console.error('Error', error);
+      console.error('Error fetching must see news:', error);
     });
 
     const fetchPromises = categories.map((category) => {
@@ -72,7 +76,7 @@ function Home() {
           }
         })
         .catch((error) => {
-          console.error('Error', error);
+          console.error('Error fetching category', category, error);
         });
     });
     
@@ -89,11 +93,13 @@ function Home() {
 
   // Fetch initial live news data on component mount
   useEffect(() => {
+    // Fetch immediately on mount
     fetchLiveNewsData();
 
+    // Set up interval for auto-refresh every 30 seconds
     const intervalId = setInterval(() => {
       fetchLiveNewsData();
-    }, 10000);
+    }, 30000);
 
     return () => clearInterval(intervalId);
   }, []);
