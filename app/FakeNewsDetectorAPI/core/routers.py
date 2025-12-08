@@ -1,7 +1,7 @@
 from rest_framework import routers
 from django.urls import path
 from core.usercheckbytitle.viewsets import UserCheckViewSet
-from core.livenews.viewsets import LiveNewsPrediction, LiveNewsByCategory, RefreshNewsView
+from core.livenews.viewsets import LiveNewsPrediction, LiveNewsByCategory, RefreshNewsView, IndiaNewsView
 from core.newsquiz.viewsets import NewsQuizViewSet
 
 router = routers.SimpleRouter()
@@ -13,5 +13,6 @@ router.register(r'category/(?P<category>[^/.]+)', LiveNewsByCategory, basename='
 
 urlpatterns = [
     path('refresh/', RefreshNewsView.as_view(), name='refresh-news'),
+    path('india-news/', IndiaNewsView.as_view(), name='india-news'),
     *router.urls,
 ]
