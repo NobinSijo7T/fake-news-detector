@@ -5,7 +5,7 @@ import { Check2, X, PlayCircle, ArrowLeft, ArrowRight } from 'react-bootstrap-ic
 import Axios from 'axios';
 
 function Home() {
-  document.title = 'Suprast | News Guardian';
+  document.title = 'News Guardian';
   let stage = 1;
 
   const [liveNewsData, setLiveNewsData] = useState([]);
