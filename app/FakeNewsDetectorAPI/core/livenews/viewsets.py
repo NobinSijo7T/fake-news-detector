@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import viewsets, generics
 from rest_framework import status
+from rest_framework.views import APIView
 
 import requests
 
@@ -94,9 +95,12 @@ def get_onmanorama_news():
 def get_new_news_from_api_and_update():
     """Gets news from the guardian news using it's API and Onmanorama"""
     
+    print("Fetching fresh news from sources...")
+    articles_added = 0
+    
     # Fetch from Guardian API
     try:
-        news_data = requests.get("https://content.guardianapis.com/search?api-key=e705adff-ca49-414e-89e2-7edede919e2e&show-fields=thumbnail", timeout=10)
+        news_data = requests.get("https://content.guardianapis.com/search?api-key=e705adff-ca49-414e-89e2-7edede919e2e&show-fields=thumbnail&page-size=20", timeout=10)
         news_data = news_data.json()
 
         guardian_articles = []
@@ -126,12 +130,14 @@ def get_new_news_from_api_and_update():
             except Exception as e:
                 print(f"Error processing Guardian article: {e}")
                 continue
+        print(f"Fetched {len(guardian_articles)} articles from Guardian")
     except Exception as e:
         print(f"Error fetching Guardian news: {e}")
         guardian_articles = []
     
     # Fetch from Onmanorama
     onmanorama_articles = get_onmanorama_news()
+    print(f"Fetched {len(onmanorama_articles)} articles from Onmanorama")
     
     # Combine all articles
     all_articles = guardian_articles + onmanorama_articles
@@ -161,10 +167,14 @@ def get_new_news_from_api_and_update():
                 )
 
                 news_article.save()
+                articles_added += 1
                 print(f"Saved: {article_data['title'][:50]}...")
         except Exception as e:
             print(f"Error saving article: {e}")
             continue
+    
+    print(f"News refresh complete. Added {articles_added} new articles.")
+    return articles_added
 
 def scrap_img_from_web(url):
     """Scrape image from Guardian article page"""
@@ -235,6 +245,29 @@ class LiveNewsPrediction(viewsets.ViewSet):
         serializer = LiveNewsDetailedSerializer(news_prediction)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def create(self, request):
+        """Force refresh news from API sources."""
+        try:
+            print("Manual refresh triggered by user...")
+            # Run the news fetch function
+            articles_added = get_new_news_from_api_and_update()
+            
+            # Return updated news
+            all_live_news = LiveNews.objects.filter(img_url__isnull=False).exclude(img_url='None').order_by('-id')[:30]
+            serializer = LiveNewsDetailedSerializer(all_live_news, many=True)
+            
+            return Response({
+                "message": f"News refreshed successfully. {articles_added} new articles added.",
+                "count": len(all_live_news),
+                "new_articles": articles_added,
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(f"Error in manual refresh: {str(e)}")
+            return Response({
+                "error": f"Failed to refresh news: {str(e)}"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class LiveNewsByCategory(viewsets.ViewSet):
     def list(self, request, category=None):
@@ -244,3 +277,42 @@ class LiveNewsByCategory(viewsets.ViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Category not provided in the URL'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RefreshNewsView(APIView):
+    """Dedicated endpoint to force refresh news from external sources"""
+    
+    def get(self, request):
+        """Handle GET request to refresh news"""
+        try:
+            print("=" * 60)
+            print("MANUAL NEWS REFRESH TRIGGERED")
+            print("=" * 60)
+            
+            # Run the news fetch function
+            articles_added = get_new_news_from_api_and_update()
+            
+            # Return updated news
+            all_live_news = LiveNews.objects.filter(img_url__isnull=False).exclude(img_url='None').order_by('-id')[:30]
+            serializer = LiveNewsDetailedSerializer(all_live_news, many=True)
+            
+            response_data = {
+                "success": True,
+                "message": f"News refreshed successfully. {articles_added} new articles added.",
+                "count": len(all_live_news),
+                "new_articles": articles_added,
+                "data": serializer.data
+            }
+            
+            print(f"✓ Refresh completed: {articles_added} new articles")
+            print("=" * 60)
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            print(f"✗ Error in manual refresh: {str(e)}")
+            print("=" * 60)
+            return Response({
+                "success": False,
+                "error": f"Failed to refresh news: {str(e)}"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -870,6 +870,52 @@ body.dark-mode .neumorphism-button:hover {
     border-color: #ccc;
 }
 
+/* Refresh Button */
+.refresh-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #FFE500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: #FFE500;
+    color: #1a1a1a;
+    transition: all 0.3s ease;
+    margin-right: 12px;
+}
+
+.refresh-button:hover {
+    background: #ffd000;
+    border-color: #ffd000;
+    transform: rotate(45deg);
+}
+
+.refresh-button.spinning {
+    animation: spin 1s linear;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+body.dark-mode .refresh-button {
+    background: #FFE500;
+    color: #1a1a1a;
+    border-color: #FFE500;
+}
+
+body.dark-mode .refresh-button:hover {
+    background: #ffd000;
+    border-color: #ffd000;
+}
+
 .hero-card {
     background: white;
     border-radius: 16px;

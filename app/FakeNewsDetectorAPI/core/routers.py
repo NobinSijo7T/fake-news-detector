@@ -1,6 +1,7 @@
 from rest_framework import routers
+from django.urls import path
 from core.usercheckbytitle.viewsets import UserCheckViewSet
-from core.livenews.viewsets import LiveNewsPrediction, LiveNewsByCategory
+from core.livenews.viewsets import LiveNewsPrediction, LiveNewsByCategory, RefreshNewsView
 from core.newsquiz.viewsets import NewsQuizViewSet
 
 router = routers.SimpleRouter()
@@ -11,5 +12,6 @@ router.register(r'quiz', NewsQuizViewSet, basename='quiz')
 router.register(r'category/(?P<category>[^/.]+)', LiveNewsByCategory, basename='livenews-by-category')
 
 urlpatterns = [
+    path('refresh/', RefreshNewsView.as_view(), name='refresh-news'),
     *router.urls,
 ]

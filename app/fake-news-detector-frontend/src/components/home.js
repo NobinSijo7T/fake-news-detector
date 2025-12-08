@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import Header from './header';
-import { Check2, X, PlayCircle, ArrowLeft, ArrowRight, ChevronDown, ChevronUp } from 'react-bootstrap-icons';
+import { Check2, X, PlayCircle, ArrowLeft, ArrowRight, ChevronDown, ChevronUp, ArrowClockwise } from 'react-bootstrap-icons';
 import Axios from 'axios';
 
 function Home() {
@@ -17,23 +17,81 @@ function Home() {
   const [mustSeeExpanded, setMustSeeExpanded] = useState(false);
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [trendyStartIndex, setTrendyStartIndex] = useState(1);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const intervalRef = useRef(null);
 
-  // Navigation handlers
+  // Navigation handlers with auto-refresh
   const handleFeaturedPrev = () => {
     setFeaturedIndex((prev) => (prev > 0 ? prev - 1 : liveNewsData.length - 1));
+    resetAutoRefreshTimer();
   };
 
   const handleFeaturedNext = () => {
     setFeaturedIndex((prev) => (prev < liveNewsData.length - 1 ? prev + 1 : 0));
+    resetAutoRefreshTimer();
   };
 
   const handleTrendyPrev = () => {
     setTrendyStartIndex((prev) => (prev > 1 ? prev - 3 : 1));
+    resetAutoRefreshTimer();
   };
 
   const handleTrendyNext = () => {
     const maxIndex = trendyNewsExpanded ? liveNewsData.length : Math.min(liveNewsData.length, 7);
     setTrendyStartIndex((prev) => (prev + 3 < maxIndex ? prev + 3 : 1));
+    resetAutoRefreshTimer();
+  };
+
+  // Manual refresh handler - triggers API to fetch new news
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      console.log('🔄 Triggering news refresh from sources...');
+      
+      // Call the dedicated refresh endpoint
+      const response = await Axios.get('http://127.0.0.1:8000/api/refresh/');
+      
+      if (response.data && response.data.success) {
+        setLiveNewsData(response.data.data);
+        console.log('✓ News refreshed successfully!');
+        console.log(`📰 Total articles: ${response.data.count}`);
+        console.log(`🆕 New articles added: ${response.data.new_articles}`);
+        console.log(`💬 ${response.data.message}`);
+        
+        // Reset navigation indices to show new content
+        setFeaturedIndex(0);
+        setTrendyStartIndex(1);
+      }
+      
+      // Also refresh category news
+      Axios.get('http://127.0.0.1:8000/api/category/News/')
+        .then((res) => {
+          if (res.data && res.data.length > 0) {
+            setMustSeeNews(res.data);
+            console.log('✓ Category news also refreshed');
+          }
+        })
+        .catch((err) => console.error('Error refreshing category news:', err));
+      
+    } catch (error) {
+      console.error('❌ Error refreshing news:', error);
+      console.log('Falling back to regular fetch...');
+      // Fallback to regular fetch if refresh fails
+      fetchLiveNewsData();
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 1500);
+      resetAutoRefreshTimer();
+    }
+  };
+
+  // Reset auto-refresh timer
+  const resetAutoRefreshTimer = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    intervalRef.current = setInterval(() => {
+      fetchLiveNewsData();
+    }, 30000);
   };
 
   // Toggle dark mode
@@ -97,11 +155,15 @@ function Home() {
     fetchLiveNewsData();
 
     // Set up interval for auto-refresh every 30 seconds
-    const intervalId = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       fetchLiveNewsData();
     }, 30000);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
   return (
@@ -196,6 +258,13 @@ function Home() {
             <div className="section-header">
               <h2 className="section-title">Trendy News</h2>
               <div className="section-nav">
+                <button 
+                  className={`refresh-button ${isRefreshing ? 'spinning' : ''}`}
+                  onClick={handleManualRefresh}
+                  title="Refresh news"
+                >
+                  <ArrowClockwise size={18} />
+                </button>
                 <button className="nav-arrow" onClick={handleTrendyPrev}><ArrowLeft size={16} /></button>
                 <button className="nav-arrow" onClick={handleTrendyNext}><ArrowRight size={16} /></button>
               </div>
