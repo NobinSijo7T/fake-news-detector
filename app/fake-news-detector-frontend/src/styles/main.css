@@ -941,6 +941,50 @@ body.dark-mode .neumorphism-button:hover {
     gap: 24px;
 }
 
+/* Accordion Toggle Button */
+.accordion-toggle-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 32px;
+}
+
+.accordion-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 32px;
+    background: #FFE500;
+    border: none;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 15px;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 229, 0, 0.3);
+}
+
+.accordion-toggle-btn:hover {
+    background: #ffd000;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 229, 0, 0.4);
+}
+
+.accordion-toggle-btn:active {
+    transform: translateY(0);
+}
+
+body.dark-mode .accordion-toggle-btn {
+    background: #FFE500;
+    color: #1a1a1a;
+    box-shadow: 0 4px 12px rgba(255, 229, 0, 0.4);
+}
+
+body.dark-mode .accordion-toggle-btn:hover {
+    background: #ffd000;
+    box-shadow: 0 6px 16px rgba(255, 229, 0, 0.5);
+}
+
 .news-card {
     background: white;
     border-radius: 12px;

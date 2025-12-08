@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import Header from './header';
-import { Check2, X, PlayCircle, ArrowLeft, ArrowRight } from 'react-bootstrap-icons';
+import { Check2, X, PlayCircle, ArrowLeft, ArrowRight, ChevronDown, ChevronUp } from 'react-bootstrap-icons';
 import Axios from 'axios';
 
 function Home() {
@@ -13,6 +13,28 @@ function Home() {
   const [allNews, setAllNews] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [darkMode, setDarkMode] = useState(false);
+  const [trendyNewsExpanded, setTrendyNewsExpanded] = useState(false);
+  const [mustSeeExpanded, setMustSeeExpanded] = useState(false);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [trendyStartIndex, setTrendyStartIndex] = useState(1);
+
+  // Navigation handlers
+  const handleFeaturedPrev = () => {
+    setFeaturedIndex((prev) => (prev > 0 ? prev - 1 : liveNewsData.length - 1));
+  };
+
+  const handleFeaturedNext = () => {
+    setFeaturedIndex((prev) => (prev < liveNewsData.length - 1 ? prev + 1 : 0));
+  };
+
+  const handleTrendyPrev = () => {
+    setTrendyStartIndex((prev) => (prev > 1 ? prev - 3 : 1));
+  };
+
+  const handleTrendyNext = () => {
+    const maxIndex = trendyNewsExpanded ? liveNewsData.length : Math.min(liveNewsData.length, 7);
+    setTrendyStartIndex((prev) => (prev + 3 < maxIndex ? prev + 3 : 1));
+  };
 
   // Toggle dark mode
   const toggleDarkMode = () => {
@@ -87,28 +109,28 @@ function Home() {
             <div className="section-header">
               <h2 className="section-title">Featured News</h2>
               <div className="section-nav">
-                <button className="nav-arrow"><ArrowLeft size={16} /></button>
-                <button className="nav-arrow"><ArrowRight size={16} /></button>
+                <button className="nav-arrow" onClick={handleFeaturedPrev}><ArrowLeft size={16} /></button>
+                <button className="nav-arrow" onClick={handleFeaturedNext}><ArrowRight size={16} /></button>
               </div>
             </div>
             
             {liveNewsData.length > 0 && (
               <div className="hero-card">
-                {liveNewsData[0].img_url !== 'None' && (
+                {liveNewsData[featuredIndex].img_url !== 'None' && (
                   <img 
-                    src={liveNewsData[0].img_url} 
-                    alt={liveNewsData[0].title}
+                    src={liveNewsData[featuredIndex].img_url} 
+                    alt={liveNewsData[featuredIndex].title}
                     className="hero-image"
                   />
                 )}
                 <div className="hero-overlay">
                   <span className="hero-category">
-                    {liveNewsData[0].section_name || 'News'}
+                    {liveNewsData[featuredIndex].section_name || 'News'}
                   </span>
-                  <h1 className="hero-title">{liveNewsData[0].title}</h1>
+                  <h1 className="hero-title">{liveNewsData[featuredIndex].title}</h1>
                   <div className="hero-meta">
-                    <span>{new Date(liveNewsData[0].publication_date).toLocaleDateString()}</span>
-                    {liveNewsData[0].prediction ? (
+                    <span>{new Date(liveNewsData[featuredIndex].publication_date).toLocaleDateString()}</span>
+                    {liveNewsData[featuredIndex].prediction ? (
                       <span className="prediction-badge real">
                         <Check2 size={14} /> Verified Real
                       </span>
@@ -168,13 +190,13 @@ function Home() {
             <div className="section-header">
               <h2 className="section-title">Trendy News</h2>
               <div className="section-nav">
-                <button className="nav-arrow"><ArrowLeft size={16} /></button>
-                <button className="nav-arrow"><ArrowRight size={16} /></button>
+                <button className="nav-arrow" onClick={handleTrendyPrev}><ArrowLeft size={16} /></button>
+                <button className="nav-arrow" onClick={handleTrendyNext}><ArrowRight size={16} /></button>
               </div>
             </div>
             
             <div className="news-grid">
-              {liveNewsData.slice(1, 7).map((news, index) => (
+              {liveNewsData.slice(trendyStartIndex, trendyNewsExpanded ? liveNewsData.length : trendyStartIndex + 6).map((news, index) => (
                 <div key={index} className="news-card">
                   {news.img_url !== 'None' && (
                     <img 
@@ -201,6 +223,27 @@ function Home() {
                 </div>
               ))}
             </div>
+            
+            {liveNewsData.length > 7 && (
+              <div className="accordion-toggle-container">
+                <button 
+                  className="accordion-toggle-btn"
+                  onClick={() => setTrendyNewsExpanded(!trendyNewsExpanded)}
+                >
+                  {trendyNewsExpanded ? (
+                    <>
+                      <span>Show Less</span>
+                      <ChevronUp size={20} />
+                    </>
+                  ) : (
+                    <>
+                      <span>Show More News ({liveNewsData.length - 7} more)</span>
+                      <ChevronDown size={20} />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </section>
 
           {/* Featured News Grid */}
@@ -211,7 +254,7 @@ function Home() {
               </div>
               
               <div className="news-grid">
-                {mustSeeNews.slice(0, 3).map((news, index) => (
+                {mustSeeNews.slice(0, mustSeeExpanded ? mustSeeNews.length : 3).map((news, index) => (
                   <div key={index} className="news-card">
                     {news.img_url !== 'None' && (
                       <img 
@@ -238,6 +281,27 @@ function Home() {
                   </div>
                 ))}
               </div>
+              
+              {mustSeeNews.length > 3 && (
+                <div className="accordion-toggle-container">
+                  <button 
+                    className="accordion-toggle-btn"
+                    onClick={() => setMustSeeExpanded(!mustSeeExpanded)}
+                  >
+                    {mustSeeExpanded ? (
+                      <>
+                        <span>Show Less</span>
+                        <ChevronUp size={20} />
+                      </>
+                    ) : (
+                      <>
+                        <span>Show More News ({mustSeeNews.length - 3} more)</span>
+                        <ChevronDown size={20} />
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </section>
           )}
         </main>
