@@ -12,6 +12,9 @@ function Home() {
   const [mustSeeNews, setMustSeeNews] = useState([]);
   const [allNews, setAllNews] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [activeRegion, setActiveRegion] = useState('All');
+  const [activeTopic, setActiveTopic] = useState('All');
+  const [activeVerification, setActiveVerification] = useState('All');
   const [darkMode, setDarkMode] = useState(false);
   const [trendyNewsExpanded, setTrendyNewsExpanded] = useState(false);
   const [mustSeeExpanded, setMustSeeExpanded] = useState(false);
@@ -19,15 +22,34 @@ function Home() {
   const [trendyStartIndex, setTrendyStartIndex] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const intervalRef = useRef(null);
+  const [filteredNews, setFilteredNews] = useState([]);
+
+  // Placeholder image as data URL  
+  const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%231a1a1a"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="%23FFE500"%3ENews Guardian%3C/text%3E%3C/svg%3E';
+
+  // Handle image error
+  const handleImageError = (e) => {
+    console.log('Image load error:', e.target.src);
+    e.target.src = PLACEHOLDER_IMAGE;
+  };
+
+  // Get image URL with fallback
+  const getImageUrl = (imgUrl) => {
+    if (!imgUrl || imgUrl === 'None' || imgUrl === '' || imgUrl === null) {
+      return PLACEHOLDER_IMAGE;
+    }
+    // Add crossorigin for external images
+    return imgUrl;
+  };
 
   // Navigation handlers with auto-refresh
   const handleFeaturedPrev = () => {
-    setFeaturedIndex((prev) => (prev > 0 ? prev - 1 : liveNewsData.length - 1));
+    setFeaturedIndex((prev) => (prev > 0 ? prev - 1 : filteredNews.length - 1));
     resetAutoRefreshTimer();
   };
 
   const handleFeaturedNext = () => {
-    setFeaturedIndex((prev) => (prev < liveNewsData.length - 1 ? prev + 1 : 0));
+    setFeaturedIndex((prev) => (prev < filteredNews.length - 1 ? prev + 1 : 0));
     resetAutoRefreshTimer();
   };
 
@@ -37,7 +59,7 @@ function Home() {
   };
 
   const handleTrendyNext = () => {
-    const maxIndex = trendyNewsExpanded ? liveNewsData.length : Math.min(liveNewsData.length, 7);
+    const maxIndex = trendyNewsExpanded ? filteredNews.length : Math.min(filteredNews.length, 7);
     setTrendyStartIndex((prev) => (prev + 3 < maxIndex ? prev + 3 : 1));
     resetAutoRefreshTimer();
   };
@@ -101,6 +123,91 @@ function Home() {
   };
 
   const categories = ['Sport', 'Lifestyle', 'Arts', 'News'];
+
+  // Filter news based on active filters
+  const applyFilters = (newsData) => {
+    let filtered = [...newsData];
+
+    // Filter by region
+    if (activeRegion !== 'All') {
+      const regionKeywords = {
+        'US': ['us', 'usa', 'united states', 'america', 'washington', 'trump', 'biden'],
+        'UK': ['uk', 'britain', 'british', 'england', 'london', 'scotland', 'wales'],
+        'Australia': ['australia', 'australian', 'sydney', 'melbourne', 'canberra'],
+        'India': ['india', 'indian', 'delhi', 'mumbai', 'modi', 'bangalore']
+      };
+
+      const keywords = regionKeywords[activeRegion] || [];
+      filtered = filtered.filter(news => 
+        keywords.some(keyword => 
+          news.title.toLowerCase().includes(keyword) || 
+          news.section_name.toLowerCase().includes(keyword)
+        )
+      );
+    }
+
+    // Filter by topic
+    if (activeTopic !== 'All') {
+      const topicMapping = {
+        'Politics': ['politics', 'election', 'government', 'parliament', 'congress'],
+        'Business': ['business', 'economy', 'finance', 'market', 'trade', 'company'],
+        'Technology': ['technology', 'tech', 'ai', 'digital', 'cyber', 'software'],
+        'Health': ['health', 'medical', 'hospital', 'doctor', 'disease', 'covid'],
+        'Environment': ['environment', 'climate', 'weather', 'pollution', 'green'],
+        'Entertainment': ['entertainment', 'film', 'movie', 'music', 'celebrity', 'show']
+      };
+
+      const keywords = topicMapping[activeTopic] || [];
+      filtered = filtered.filter(news => 
+        keywords.some(keyword => 
+          news.title.toLowerCase().includes(keyword) || 
+          news.section_name.toLowerCase().includes(keyword) ||
+          news.news_category.toLowerCase().includes(keyword)
+        )
+      );
+    }
+
+    // Filter by verification status
+    if (activeVerification === 'Verified') {
+      filtered = filtered.filter(news => news.prediction === true);
+    } else if (activeVerification === 'Fake') {
+      filtered = filtered.filter(news => news.prediction === false);
+    }
+
+    return filtered;
+  };
+
+  // Update filtered news whenever filters or data changes
+  useEffect(() => {
+    const filtered = applyFilters(liveNewsData);
+    setFilteredNews(filtered);
+    setFeaturedIndex(0);
+    setTrendyStartIndex(1);
+  }, [liveNewsData, activeRegion, activeTopic, activeVerification]);
+
+  // Fetch India-specific news when India region is selected
+  useEffect(() => {
+    if (activeRegion === 'India') {
+      fetchIndiaNews();
+    }
+  }, [activeRegion]);
+
+  // Function to fetch India-specific news
+  const fetchIndiaNews = async () => {
+    try {
+      console.log('🇮🇳 Fetching India news from Google News & Onmanorama...');
+      const response = await Axios.get('http://127.0.0.1:8000/api/india-news/');
+      
+      if (response.data && response.data.success && response.data.data) {
+        setLiveNewsData(response.data.data);
+        console.log('✓ India news fetched successfully!');
+        console.log(`📰 Total articles: ${response.data.count}`);
+        console.log(`🆕 New articles added: ${response.data.new_articles}`);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching India news:', error);
+    }
+  };
 
   // Function to fetch live news data
   const fetchLiveNewsData = () => {
@@ -182,23 +289,22 @@ function Home() {
               </div>
             </div>
             
-            {liveNewsData.length > 0 && (
+            {filteredNews.length > 0 ? (
               <div className="hero-card">
-                {liveNewsData[featuredIndex].img_url !== 'None' && (
-                  <img 
-                    src={liveNewsData[featuredIndex].img_url} 
-                    alt={liveNewsData[featuredIndex].title}
-                    className="hero-image"
-                  />
-                )}
+                <img 
+                  src={getImageUrl(filteredNews[featuredIndex].img_url)} 
+                  alt={filteredNews[featuredIndex].title}
+                  className="hero-image"
+                  onError={handleImageError}
+                />
                 <div className="hero-overlay">
                   <span className="hero-category">
-                    {liveNewsData[featuredIndex].section_name || 'News'}
+                    {filteredNews[featuredIndex].section_name || 'News'}
                   </span>
-                  <h1 className="hero-title">{liveNewsData[featuredIndex].title}</h1>
+                  <h1 className="hero-title">{filteredNews[featuredIndex].title}</h1>
                   <div className="hero-meta">
-                    <span>{new Date(liveNewsData[featuredIndex].publication_date).toLocaleDateString()}</span>
-                    {liveNewsData[featuredIndex].prediction ? (
+                    <span>{new Date(filteredNews[featuredIndex].publication_date).toLocaleDateString()}</span>
+                    {filteredNews[featuredIndex].prediction ? (
                       <span className="prediction-badge real">
                         <Check2 size={14} /> Verified Real
                       </span>
@@ -210,47 +316,64 @@ function Home() {
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="no-news-message">
+                <p>No news found matching your filters. Try adjusting your selection.</p>
+              </div>
             )}
           </section>
 
-          {/* Category Tabs */}
-          <div className="category-tabs">
-            <button 
-              className={`category-tab ${activeCategory === 'All' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('All')}
-            >
-              All
-            </button>
-            <button 
-              className={`category-tab ${activeCategory === 'Football' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('Football')}
-            >
-              Football
-            </button>
-            <button 
-              className={`category-tab ${activeCategory === 'Cricket' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('Cricket')}
-            >
-              Cricket
-            </button>
-            <button 
-              className={`category-tab ${activeCategory === 'Rugby' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('Rugby')}
-            >
-              Rugby
-            </button>
-            <button 
-              className={`category-tab ${activeCategory === 'Tennis' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('Tennis')}
-            >
-              Tennis
-            </button>
-            <button 
-              className={`category-tab ${activeCategory === 'Golf' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('Golf')}
-            >
-              Golf
-            </button>
+          {/* Filter Categories */}
+          <div className="filter-section">
+            {/* Region Filter */}
+            <div className="filter-group">
+              <h3 className="filter-title">By Region</h3>
+              <div className="category-tabs">
+                {['All', 'US', 'UK', 'Australia', 'India'].map((region) => (
+                  <button 
+                    key={region}
+                    className={`category-tab ${activeRegion === region ? 'active' : ''}`}
+                    onClick={() => setActiveRegion(region)}
+                  >
+                    {region}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Topic Filter */}
+            <div className="filter-group">
+              <h3 className="filter-title">By Topic</h3>
+              <div className="category-tabs">
+                {['All', 'Politics', 'Business', 'Technology', 'Health', 'Environment', 'Entertainment'].map((topic) => (
+                  <button 
+                    key={topic}
+                    className={`category-tab ${activeTopic === topic ? 'active' : ''}`}
+                    onClick={() => setActiveTopic(topic)}
+                  >
+                    {topic}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Verification Filter */}
+            <div className="filter-group">
+              <h3 className="filter-title">By Verification</h3>
+              <div className="category-tabs">
+                {['All', 'Verified', 'Fake'].map((status) => (
+                  <button 
+                    key={status}
+                    className={`category-tab ${activeVerification === status ? 'active' : ''}`}
+                    onClick={() => setActiveVerification(status)}
+                  >
+                    {status === 'Verified' && '✓ '}
+                    {status === 'Fake' && '✗ '}
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Trendy News Section */}
@@ -271,15 +394,14 @@ function Home() {
             </div>
             
             <div className="news-grid">
-              {liveNewsData.slice(trendyStartIndex, trendyNewsExpanded ? liveNewsData.length : trendyStartIndex + 6).map((news, index) => (
+              {filteredNews.slice(trendyStartIndex, trendyNewsExpanded ? filteredNews.length : trendyStartIndex + 6).map((news, index) => (
                 <div key={index} className="news-card">
-                  {news.img_url !== 'None' && (
-                    <img 
-                      src={news.img_url} 
-                      alt={news.title}
-                      className="news-card-image"
-                    />
-                  )}
+                  <img 
+                    src={getImageUrl(news.img_url)} 
+                    alt={news.title}
+                    className="news-card-image"
+                    onError={handleImageError}
+                  />
                   <div className="news-card-content">
                     <div className="news-card-category">
                       {news.section_name || 'News'} • {new Date(news.publication_date).toLocaleDateString()}
@@ -299,7 +421,7 @@ function Home() {
               ))}
             </div>
             
-            {liveNewsData.length > 7 && (
+            {filteredNews.length > 7 && (
               <div className="accordion-toggle-container">
                 <button 
                   className="accordion-toggle-btn"
@@ -312,7 +434,7 @@ function Home() {
                     </>
                   ) : (
                     <>
-                      <span>Show More News ({liveNewsData.length - 7} more)</span>
+                      <span>Show More News ({filteredNews.length - 7} more)</span>
                       <ChevronDown size={20} />
                     </>
                   )}
@@ -331,13 +453,12 @@ function Home() {
               <div className="news-grid">
                 {mustSeeNews.slice(0, mustSeeExpanded ? mustSeeNews.length : 3).map((news, index) => (
                   <div key={index} className="news-card">
-                    {news.img_url !== 'None' && (
-                      <img 
-                        src={news.img_url} 
-                        alt={news.title}
-                        className="news-card-image"
-                      />
-                    )}
+                    <img 
+                      src={getImageUrl(news.img_url)} 
+                      alt={news.title}
+                      className="news-card-image"
+                      onError={handleImageError}
+                    />
                     <div className="news-card-content">
                       <div className="news-card-category">
                         {news.section_name || 'News'} • {new Date(news.publication_date).toLocaleDateString()}
@@ -388,14 +509,13 @@ function Home() {
             <h3 className="sidebar-title">Top Story</h3>
             
             {liveNewsData.slice(0, 5).map((news, index) => (
-              <div key={index} className="story-item">
-                {news.img_url !== 'None' && (
-                  <img 
-                    src={news.img_url} 
-                    alt={news.title}
-                    className="story-image"
-                  />
-                )}
+              <div key={index} className="news-card">
+                <img 
+                  src={getImageUrl(news.img_url)} 
+                  alt={news.title}
+                  className="news-card-image"
+                  onError={handleImageError}
+                />
                 <div className="story-content">
                   <div className="story-category">
                     {news.section_name || 'News'} • {new Date(news.publication_date).toLocaleDateString()}
