@@ -249,28 +249,59 @@ def get_altnews_fact_checks():
                     pub_date_str = datetime.now().isoformat()
                 
                 # Extract image from description or media content
-                img_url = "https://via.placeholder.com/400x300/FF4444/FFFFFF?text=AltNews+Fact+Check"
+                img_url = None
                 
                 # Try media:content tag (common in WordPress feeds)
                 media_content = item.find('media:content')
                 if media_content and media_content.get('url'):
                     img_url = media_content['url']
-                else:
-                    # Try enclosure tag
+                    print(f"Found image from media:content: {img_url[:60]}...")
+                
+                # Try enclosure tag
+                if not img_url:
                     enclosure = item.find('enclosure')
                     if enclosure and enclosure.get('url'):
                         img_url = enclosure['url']
-                    else:
-                        # Try description
-                        description = item.find('description')
-                        if description:
-                            desc_html = str(description)
-                            desc_soup = BeautifulSoup(desc_html, 'html.parser')
-                            img_tag = desc_soup.find('img')
-                            if img_tag:
-                                img_src = img_tag.get('src') or img_tag.get('data-src')
-                                if img_src and img_src.startswith('http'):
-                                    img_url = img_src
+                        print(f"Found image from enclosure: {img_url[:60]}...")
+                
+                # Try content:encoded tag (WordPress extended content)
+                if not img_url:
+                    content_encoded = item.find('content:encoded')
+                    if content_encoded:
+                        content_html = str(content_encoded)
+                        content_soup = BeautifulSoup(content_html, 'html.parser')
+                        img_tag = content_soup.find('img')
+                        if img_tag:
+                            img_src = img_tag.get('src') or img_tag.get('data-src')
+                            if img_src and img_src.startswith('http'):
+                                img_url = img_src
+                                print(f"Found image from content:encoded: {img_url[:60]}...")
+                
+                # Try description
+                if not img_url:
+                    description = item.find('description')
+                    if description:
+                        desc_html = str(description)
+                        desc_soup = BeautifulSoup(desc_html, 'html.parser')
+                        img_tag = desc_soup.find('img')
+                        if img_tag:
+                            img_src = img_tag.get('src') or img_tag.get('data-src')
+                            if img_src and img_src.startswith('http'):
+                                img_url = img_src
+                                print(f"Found image from description: {img_url[:60]}...")
+                
+                # If still no image, try scraping the article page
+                if not img_url and link:
+                    print(f"No image in RSS feed, scraping article page: {link[:50]}...")
+                    scraped_img = scrap_img_from_altnews(link)
+                    if scraped_img and scraped_img != "None":
+                        img_url = scraped_img
+                        print(f"Found image from scraping: {img_url[:60]}...")
+                
+                # Fallback to placeholder
+                if not img_url:
+                    img_url = "https://via.placeholder.com/400x300/FF4444/FFFFFF?text=AltNews+Fact+Check"
+                    print("Using placeholder image for AltNews article")
                 
                 # Get category
                 category_tag = item.find('category')
@@ -446,6 +477,53 @@ def scrap_img_from_web(url):
         print(f"Error scraping image from {url}: {e}")
         return "None"
 
+def scrap_img_from_altnews(url):
+    """Scrape image from AltNews article page"""
+    try:
+        r = requests.get(url, timeout=15, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        if r.status_code != 200:
+            print(f"Failed to scrape AltNews page: {r.status_code}")
+            return "None"
+        
+        soup = BeautifulSoup(r.content, 'html.parser')
+        
+        # Try og:image meta tag (most reliable)
+        meta_img = soup.find('meta', property='og:image')
+        if meta_img and meta_img.get('content'):
+            img_url = meta_img['content']
+            if img_url.startswith('http'):
+                return img_url
+        
+        # Try twitter:image
+        twitter_img = soup.find('meta', attrs={'name': 'twitter:image'})
+        if twitter_img and twitter_img.get('content'):
+            img_url = twitter_img['content']
+            if img_url.startswith('http'):
+                return img_url
+        
+        # Try featured image in article content
+        featured_img = soup.find('img', class_='wp-post-image')
+        if featured_img:
+            src = featured_img.get('src') or featured_img.get('data-src')
+            if src and src.startswith('http'):
+                return src
+        
+        # Try first image in article content
+        article = soup.find('article') or soup.find('div', class_='entry-content')
+        if article:
+            img = article.find('img')
+            if img:
+                src = img.get('src') or img.get('data-src')
+                if src and src.startswith('http'):
+                    return src
+        
+        return "None"
+    except Exception as e:
+        print(f"Error scraping AltNews image from {url}: {e}")
+        return "None"
+
 def auto_refresh_news():
     """Auto refresh news periodically"""
     print("Starting initial news fetch...")
@@ -468,7 +546,7 @@ class LiveNewsPrediction(viewsets.ViewSet):
 
     def list(self, request):
         """Handles GET request by displaying all newly retrieved in database."""
-        all_live_news = LiveNews.objects.filter(img_url__isnull=False).exclude(img_url='None').order_by('-id')[:30]
+        all_live_news = LiveNews.objects.filter(img_url__isnull=False).exclude(img_url='None').order_by('-id')[:200]
 
         serializer = LiveNewsDetailedSerializer(all_live_news, many=True)
 
@@ -493,7 +571,7 @@ class LiveNewsPrediction(viewsets.ViewSet):
             articles_added = get_new_news_from_api_and_update()
             
             # Return updated news
-            all_live_news = LiveNews.objects.filter(img_url__isnull=False).exclude(img_url='None').order_by('-id')[:30]
+            all_live_news = LiveNews.objects.filter(img_url__isnull=False).exclude(img_url='None').order_by('-id')[:200]
             serializer = LiveNewsDetailedSerializer(all_live_news, many=True)
             
             return Response({
@@ -511,7 +589,7 @@ class LiveNewsPrediction(viewsets.ViewSet):
 class LiveNewsByCategory(viewsets.ViewSet):
     def list(self, request, category=None):
         if category is not None:
-            live_news = LiveNews.objects.filter(news_category=category, img_url__isnull=False).exclude(img_url='None').order_by('-id')[:30]
+            live_news = LiveNews.objects.filter(news_category=category, img_url__isnull=False).exclude(img_url='None').order_by('-id')[:200]
             serializer = LiveNewsDetailedSerializer(live_news, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:

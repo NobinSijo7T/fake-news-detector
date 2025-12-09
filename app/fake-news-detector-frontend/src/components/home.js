@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from './header';
 import { Check2, X, ArrowLeft, ArrowRight, ChevronDown, ChevronUp, ArrowClockwise } from 'react-bootstrap-icons';
 import Axios from 'axios';
+import Cookies from 'js-cookie';
 
 function Home() {
   document.title = 'News Guardian';
   let stage = 1;
 
+  const navigate = useNavigate();
   const [liveNewsData, setLiveNewsData] = useState([]);
-  const [mustSeeNews, setMustSeeNews] = useState([]);
+  const [moreNews, setMoreNews] = useState([]);
   const [allNews, setAllNews] = useState([]);
   const [activeRegion, setActiveRegion] = useState('All');
   const [activeTopic, setActiveTopic] = useState('All');
@@ -18,9 +21,14 @@ function Home() {
   const [mustSeeExpanded, setMustSeeExpanded] = useState(false);
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [trendyStartIndex, setTrendyStartIndex] = useState(1);
+  const [moreNewsStartIndex, setMoreNewsStartIndex] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const intervalRef = useRef(null);
   const [filteredNews, setFilteredNews] = useState([]);
+
+  const CACHE_KEY_LIVE = 'news_guardian_live_news';
+  const CACHE_KEY_MORE = 'news_guardian_more_news';
+  const CACHE_EXPIRY = 10; // 10 minutes
 
   // Placeholder image as data URL  
   const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%231a1a1a"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="%23FFE500"%3ENews Guardian%3C/text%3E%3C/svg%3E';
@@ -62,6 +70,16 @@ function Home() {
     resetAutoRefreshTimer();
   };
 
+  const handleMustSeePrev = () => {
+    setMoreNewsStartIndex((prev) => (prev > 0 ? prev - 3 : Math.max(0, moreNews.length - 3)));
+    resetAutoRefreshTimer();
+  };
+
+  const handleMustSeeNext = () => {
+    setMoreNewsStartIndex((prev) => (prev + 3 < moreNews.length ? prev + 3 : 0));
+    resetAutoRefreshTimer();
+  };
+
   // Manual refresh handler - triggers API to fetch new news
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -87,7 +105,7 @@ function Home() {
       Axios.get('http://127.0.0.1:8000/api/category/News/')
         .then((res) => {
           if (res.data && res.data.length > 0) {
-            setMustSeeNews(res.data);
+            setMoreNews(res.data);
             console.log('✓ Category news also refreshed');
           }
         })
@@ -207,28 +225,66 @@ function Home() {
     }
   };
 
-  // Function to fetch live news data
+  // Function to fetch live news data with cookie caching
   const fetchLiveNewsData = useCallback(() => {
+    // Check cache for live news
+    const cachedLiveNews = Cookies.get(CACHE_KEY_LIVE);
+    if (cachedLiveNews) {
+      try {
+        const parsedData = JSON.parse(cachedLiveNews);
+        setLiveNewsData(parsedData);
+        console.log('✓ Loaded from cache:', parsedData.length, 'live news articles');
+      } catch (e) {
+        console.error('Error parsing cached live news:', e);
+      }
+    }
+
+    // Fetch fresh data from API
     Axios.get('http://127.0.0.1:8000/api/live/')
       .then((response) => {
         if (response.data && response.data.length > 0) {
           setLiveNewsData(response.data);
-          console.log('Live news fetched:', response.data.length, 'articles');
+          // Save to cookie cache (expires in 10 minutes)
+          Cookies.set(CACHE_KEY_LIVE, JSON.stringify(response.data), { expires: CACHE_EXPIRY / 1440 });
+          console.log('✓ Live news fetched from API:', response.data.length, 'articles');
         }
       })
       .catch((error) => {
-        console.error('Error fetching live news:', error);
+        console.error('❌ Error fetching live news:', error);
+        // If API fails and we have cache, fallback to cached data
+        if (cachedLiveNews) {
+          console.log('⚠️ Using cached live news as fallback');
+        }
       });
     
+    // Check cache for more news
+    const cachedMoreNews = Cookies.get(CACHE_KEY_MORE);
+    if (cachedMoreNews) {
+      try {
+        const parsedData = JSON.parse(cachedMoreNews);
+        setMoreNews(parsedData);
+        console.log('✓ Loaded from cache:', parsedData.length, 'more news articles');
+      } catch (e) {
+        console.error('Error parsing cached more news:', e);
+      }
+    }
+
+    // Fetch fresh category news
     Axios.get('http://127.0.0.1:8000/api/category/News/')
     .then((response) => {
       if (response.data && response.data.length > 0) {
-        setMustSeeNews(response.data);
-        console.log('Must see news fetched:', response.data.length, 'articles');
+        setMoreNews(response.data);
+        // Save to cookie cache
+        Cookies.set(CACHE_KEY_MORE, JSON.stringify(response.data), { expires: CACHE_EXPIRY / 1440 });
+        console.log('✓ More news fetched from API:', response.data.length, 'articles');
       }
     })
     .catch((error) => {
-      console.error('Error fetching must see news:', error);
+      console.error('❌ Error fetching more news:', error);
+      // If API fails and we have cache, fallback to cached data
+      if (cachedMoreNews) {
+        console.log('⚠️ Using cached more news as fallback');
+      }
     });
 
     const fetchPromises = categories.map((category) => {
@@ -401,7 +457,7 @@ function Home() {
             </div>
             
             <div className="news-grid">
-              {filteredNews.slice(trendyStartIndex, trendyNewsExpanded ? filteredNews.length : trendyStartIndex + 6).map((news, index) => (
+              {filteredNews.slice(trendyStartIndex, trendyNewsExpanded ? trendyStartIndex + 18 : trendyStartIndex + 6).map((news, index) => (
                 <div key={index} className="news-card">
                   <img 
                     src={getImageUrl(news.img_url)} 
@@ -452,7 +508,7 @@ function Home() {
                     </>
                   ) : (
                     <>
-                      <span>Show More News ({filteredNews.length - 7} more)</span>
+                      <span>Show More News ({Math.min(filteredNews.length - 7, 12)} more)</span>
                       <ChevronDown size={20} />
                     </>
                   )}
@@ -461,15 +517,26 @@ function Home() {
             )}
           </section>
 
-          {/* Featured News Grid */}
-          {mustSeeNews.length >= 3 && (
+          {/* More News Grid */}
+          {moreNews.length >= 3 && (
             <section className="featured-section">
               <div className="section-header">
-                <h2 className="section-title">Must See</h2>
+                <h2 className="section-title">More News</h2>
+                <div className="section-actions">
+                  {moreNews.length > 3 && (
+                    <div className="section-nav">
+                      <button className="nav-arrow" onClick={handleMustSeePrev}><ArrowLeft size={16} /></button>
+                      <button className="nav-arrow" onClick={handleMustSeeNext}><ArrowRight size={16} /></button>
+                    </div>
+                  )}
+                  <button className="see-more-btn" onClick={() => navigate('/all-news')}>
+                    See More
+                  </button>
+                </div>
               </div>
               
               <div className="news-grid">
-                {mustSeeNews.slice(0, mustSeeExpanded ? mustSeeNews.length : 3).map((news, index) => (
+                {moreNews.slice(moreNewsStartIndex, moreNewsStartIndex + 3).map((news, index) => (
                   <div key={index} className="news-card">
                     <img 
                       src={getImageUrl(news.img_url)} 
@@ -501,27 +568,6 @@ function Home() {
                   </div>
                 ))}
               </div>
-              
-              {mustSeeNews.length > 3 && (
-                <div className="accordion-toggle-container">
-                  <button 
-                    className="accordion-toggle-btn"
-                    onClick={() => setMustSeeExpanded(!mustSeeExpanded)}
-                  >
-                    {mustSeeExpanded ? (
-                      <>
-                        <span>Show Less</span>
-                        <ChevronUp size={20} />
-                      </>
-                    ) : (
-                      <>
-                        <span>Show More News ({mustSeeNews.length - 3} more)</span>
-                        <ChevronDown size={20} />
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
             </section>
           )}
         </main>

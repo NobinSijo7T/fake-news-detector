@@ -1,5 +1,5 @@
 import {React} from "react";
-import { Moon, Sun } from 'react-bootstrap-icons';
+import { Moon, Sun, Newspaper } from 'react-bootstrap-icons';
 import { FiSend } from "react-icons/fi";
 import { LinkContainer } from 'react-router-bootstrap';
 
@@ -17,6 +17,12 @@ function Header(props) {
                 </div>
                 
                 <div className="header-actions">
+                    <LinkContainer to='/all-news'>
+                        <button className="neumorphism-button">
+                            <Newspaper />
+                            <span>All News</span>
+                        </button>
+                    </LinkContainer>
                     <LinkContainer to='/checkbytitle'>
                         <button className="neumorphism-button">
                             <FiSend />

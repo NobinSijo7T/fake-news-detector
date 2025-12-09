@@ -8,6 +8,7 @@ import Home from './components/home';
 import NewsQuiz from './components/newsquiz';
 import CheckByTitle from './components/checkbytitle';
 import CategoryContainer from './components/category';
+import AllNews from './components/allnews';
 
 const router = createBrowserRouter([
   {
@@ -28,7 +29,11 @@ const router = createBrowserRouter([
   {
     path: '/category/:category',
     element: <CategoryContainer />,
+  },
 
+  {
+    path: '/all-news',
+    element: <AllNews />,
   }
 ]);
 
