@@ -4,8 +4,6 @@
   # Fake News Detector
   
   ### AI-Powered News Verification System
-  
-  [![Watch the video](https://i.postimg.cc/tgGgrMsN/25480.jpg)](http://artificialbrains.s3.amazonaws.com/news_guardian.mp4)
 </div>
 
 ---
@@ -47,12 +45,17 @@ Enter a news headline to instantly receive a prediction on its authenticity.
 │                 │         │   (Port 8000)    │         │                 │
 └─────────────────┘         └──────────────────┘         └─────────────────┘
          │                           │                            │
-         │                           │                            │
-         ▼                           ▼                            ▼
-  ┌──────────────┐          ┌──────────────┐            ┌─────────────┐
-  │   Browser    │          │   SQLite DB  │            │  News APIs  │
-  │   Storage    │          │              │            │ (Guardian)  │
-  └──────────────┘          └──────────────┘            └─────────────┘
+         │                           ▼                            ▼
+         ▼                   ┌──────────────┐            ┌─────────────────┐
+  ┌──────────────┐          │   SQLite DB  │            │   External APIs │
+  │   Browser    │          │              │            ├─────────────────┤
+  │   Storage    │          └──────────────┘            │ • Guardian API  │
+  └──────────────┘                  │                   │ • SerpAPI       │
+                                    ▼                   │ • GROQ Cloud    │
+                            ┌──────────────┐            │   (Meta Llama)  │
+                            │ Meta4 Scout  │◄───────────┤                 │
+                            │  Verifier    │            └─────────────────┘
+                            └──────────────┘
 ```
 
 ### Technology Stack
@@ -74,13 +77,16 @@ Enter a news headline to instantly receive a prediction on its authenticity.
 - **Filtering:** django-filter 24.2
 - **Database:** SQLite (included with Django)
 - **Machine Learning:** scikit-learn
+- **AI Integration:** GROQ Cloud (Meta Llama 4 Scout via groq library)
+- **News Search:** SerpAPI (Google News integration)
 - **Web Scraping:** BeautifulSoup4, lxml
 - **HTTP Requests:** requests 2.32.3
 
-#### Machine Learning
-- **Algorithm:** Trained classification model for fake news detection
-- **Features:** NLP-based text analysis, source credibility scoring
-- **Framework:** scikit-learn
+#### Machine Learning & AI
+- **Primary Model:** Trained classification model for fake news detection (scikit-learn)
+- **AI Enhancement:** Meta Llama 4 Scout via GROQ Cloud for advanced reasoning
+- **Features:** NLP-based text analysis, source credibility scoring, cross-reference verification
+- **External Intelligence:** SerpAPI for real-time news cross-referencing
 
 ---
 
@@ -107,18 +113,15 @@ choco --version
 choco install python --version=3.11.0 -y
 ```
 
-**Set Python Environment Variables:**
+**Set Python Environment Variables (Automated):**
 
-1. Open "Environment Variables" (search in Start menu)
-2. Under "System Variables", find and edit `Path`
-3. Add these paths (adjust version if needed):
-   ```
-   C:\Python311\
-   C:\Python311\Scripts\
-   ```
-4. Click OK and restart your terminal
+Run this PowerShell command as Administrator to automatically add Python to PATH:
 
-Verify Python installation:
+```powershell
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Python311\;C:\Python311\Scripts\", [EnvironmentVariableTarget]::Machine)
+```
+
+Restart your terminal, then verify Python installation:
 ```powershell
 python --version
 pip --version
@@ -158,7 +161,44 @@ git clone https://github.com/NobinSijo7T/fake-news-detector.git
 cd fake-news-detector
 ```
 
-#### Step 2: Backend Setup
+#### Step 2: Configure External APIs
+
+This project uses external APIs for enhanced news verification:
+
+**1. GROQ Cloud (Meta Llama 4 Scout AI Model)**
+
+- Visit [GROQ Cloud Console](https://console.groq.com/)
+- Sign up for a free account
+- Navigate to API Keys section
+- Create a new API key
+- Copy the key (you'll need it for the `.env` file)
+
+**2. SerpAPI (Google News Search)**
+
+- Visit [SerpAPI](https://serpapi.com/)
+- Sign up for a free account (100 searches/month free)
+- Go to Dashboard → API Key
+- Copy your API key
+
+**3. Create `.env` File**
+
+Create a `.env` file in the `app/FakeNewsDetectorAPI/` directory:
+
+```powershell
+cd app/FakeNewsDetectorAPI
+New-Item .env -ItemType File
+```
+
+Add your API keys to the `.env` file:
+
+```env
+GROQ_API_KEY=your-groq-api-key-here
+SERPAPI_KEY=your-serpapi-key-here
+```
+
+**Note:** Replace `your-groq-api-key-here` and `your-serpapi-key-here` with your actual API keys.
+
+#### Step 3: Backend Setup
 
 Navigate to the backend directory and install Python packages:
 
@@ -179,7 +219,7 @@ python manage.py migrate
 python manage.py quiz_data_loader game_data/game_data.csv
 ```
 
-#### Step 3: Frontend Setup
+#### Step 4: Frontend Setup
 
 Navigate to the frontend directory and install npm packages:
 
@@ -229,6 +269,8 @@ If it doesn't open automatically, navigate to `http://localhost:3000` in your br
 | django-cors-headers | 4.4.0 | Handle Cross-Origin Resource Sharing |
 | django-filter | 24.2 | Advanced filtering for API |
 | scikit-learn | Latest | Machine learning models |
+| groq | Latest | GROQ Cloud API client (Meta Llama 4 Scout) |
+| serpapi | Latest | SerpAPI client for Google News search |
 | requests | 2.32.3 | HTTP library for API calls |
 | beautifulsoup4 | Latest | HTML/XML parsing |
 | lxml | Latest | XML/HTML parser |
