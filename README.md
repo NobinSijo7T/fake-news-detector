@@ -1,74 +1,295 @@
-# Fake News Detector
+<div align="center">
+  <img src="app/fake-news-detector-frontend/public/logo.png" alt="Fake News Detector Logo" width="200"/>
+  
+  # Fake News Detector
+  
+  ### AI-Powered News Verification System
+  
+  [![Watch the video](https://i.postimg.cc/tgGgrMsN/25480.jpg)](http://artificialbrains.s3.amazonaws.com/news_guardian.mp4)
+</div>
 
-[![Watch the video](https://i.postimg.cc/tgGgrMsN/25480.jpg)](http://artificialbrains.s3.amazonaws.com/news_guardian.mp4)
+---
 
+## 📖 About
 
-Welcome to the Fake News Detector project! This project was created as part of my college coursework, and I'm excited to share it with the developer community. If you are interested in contributing to this project or using it as a basis for your own development, please read on.
+**Fake News Detector (FND)** is an intelligent web application designed to combat misinformation by analyzing news articles using machine learning algorithms. The system provides real-time predictions, helping users identify unreliable news sources and make informed decisions about the content they consume.
 
-## About FND
+This project leverages advanced NLP techniques and credibility scoring to deliver accurate assessments of news authenticity.
 
-FND is a web-based application designed to detect fake news articles. It uses machine learning models to analyze news articles and predict whether they are real or fake. The goal of this project is to provide a tool that can help users identify unreliable news sources and combat the spread of misinformation.
+## ✨ Features
 
-## Features
+### 🔴 Live News Monitoring
+View real-time predictions for news articles from various sources with credibility scores and fact-check indicators.
 
-- **Live News Monitoring:** View real-time predictions for news articles.
-![live_monitoring](https://imgur.com/9BVijIo.png)
+![Live News Monitoring](app/fake-news-detector-frontend/public/1.png)
 
-- **News Quiz:** Test your fake news detection skills by taking our news quiz.
-![news_quiz](https://imgur.com/w0xmk5f.png)
+### 🎯 News Quiz
+Test your fake news detection skills with an interactive quiz featuring real news articles.
 
-- **Check News by Title:** Enter a news title to see if it's predicted as real or fake.
-![check_title](https://imgur.com/YDrfDVT.png)
+![News Quiz](app/fake-news-detector-frontend/public/2.png)
 
-- **User Collaboration:** I encourage other developers to collaborate and improve this project further.
+### 🔍 Check News by Title
+Enter a news headline to instantly receive a prediction on its authenticity.
 
-## Getting Started
+![Check by Title](app/fake-news-detector-frontend/public/3.png)
 
-To get started with this project, follow these steps:
+---
 
-1. Cloning the repository
+## 🏗️ Architecture
 
-`git clone https://github.com/DJDarkCyber/Fake-News-Detector`
+### System Design
 
-2. Install the required libraries for python
+```
+┌─────────────────┐         ┌──────────────────┐         ┌─────────────────┐
+│                 │         │                  │         │                 │
+│  React Frontend │ ◄─────► │   Django REST    │ ◄─────► │   ML Model      │
+│   (Port 3000)   │   HTTP  │  Framework API   │         │  (scikit-learn) │
+│                 │         │   (Port 8000)    │         │                 │
+└─────────────────┘         └──────────────────┘         └─────────────────┘
+         │                           │                            │
+         │                           │                            │
+         ▼                           ▼                            ▼
+  ┌──────────────┐          ┌──────────────┐            ┌─────────────┐
+  │   Browser    │          │   SQLite DB  │            │  News APIs  │
+  │   Storage    │          │              │            │ (Guardian)  │
+  └──────────────┘          └──────────────┘            └─────────────┘
+```
 
-`cd Fake-News-Detector/app/FakeNewsDetectorAPI/ && pip install -r requirements.txt`
+### Technology Stack
 
-3. Install the required libraries for js
+#### Frontend
+- **Framework:** React 18.2.0
+- **Routing:** React Router DOM 6.15.0
+- **UI Components:** React Bootstrap 2.8.0, Bootstrap 5.3.1
+- **Icons:** React Bootstrap Icons 1.10.3, React Icons 5.5.0
+- **HTTP Client:** Axios 1.5.0
+- **State Management:** React Hooks, Context API
+- **Caching:** js-cookie 3.0.5
+- **Notifications:** React Toastify 9.1.3
 
-`cd ../fake-news-detector-frontend && npm install`
+#### Backend
+- **Framework:** Django 4.2.3
+- **API:** Django REST Framework 3.14.0
+- **CORS:** django-cors-headers 4.4.0
+- **Filtering:** django-filter 24.2
+- **Database:** SQLite (included with Django)
+- **Machine Learning:** scikit-learn
+- **Web Scraping:** BeautifulSoup4, lxml
+- **HTTP Requests:** requests 2.32.3
 
-4. Deployment
+#### Machine Learning
+- **Algorithm:** Trained classification model for fake news detection
+- **Features:** NLP-based text analysis, source credibility scoring
+- **Framework:** scikit-learn
 
-Open terminal and cd to project root folder and run
+---
 
-`cd app/FakeNewsDetectorAPI/ && python manage.py migrate && python manage.py runserver`
+## 🚀 Installation Guide (Windows)
 
-To load quiz data,
+### Prerequisites
 
-`python manage.py quiz_data_loader game_data/game_data.csv`
+#### Step 1: Install Chocolatey Package Manager
 
-Open another terminal and cd to project root folder and run
+Open PowerShell as Administrator and run:
 
-`cd app/fake-news-detector-frontend/ && npm start`
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+```
 
-All set if everything running without errors. Now the deployed web application should open in a browser. If not, open a browser and navigate to http://localhost:3000
+Verify installation:
+```powershell
+choco --version
+```
 
-## Contributing
+#### Step 2: Install Python via Chocolatey
 
-I welcome contributions from fellow developers. If you have ideas for new features, improvements, or bug fixes, please open an issue or submit a pull request. Your contributions will be greatly appreciated and will help make this project even better.
+```powershell
+choco install python --version=3.11.0 -y
+```
 
-## Roadmap
+**Set Python Environment Variables:**
 
-- **Enhanced Machine Learning Models:** Improve the accuracy of the fake news detection models.
-- **User Profiles:** Allow users to create profiles and track their quiz scores.
+1. Open "Environment Variables" (search in Start menu)
+2. Under "System Variables", find and edit `Path`
+3. Add these paths (adjust version if needed):
+   ```
+   C:\Python311\
+   C:\Python311\Scripts\
+   ```
+4. Click OK and restart your terminal
 
-## Contact
+Verify Python installation:
+```powershell
+python --version
+pip --version
+```
 
-If you have any questions or suggestions, feel free to reach out to me at [dark_agent_437@protonmail.com](dark_agent_437@protonmail.com).
+#### Step 3: Install Node.js via Chocolatey
 
-If you have any issues, raise [issue](https://github.com/DJDarkCyber/Fake-News-Detector/issues).
+```powershell
+choco install nodejs-lts -y
+```
 
-Thank you for considering contributing to the Fake News Detector project. Together, we can make a positive impact on the fight against misinformation.
+Verify Node.js and npm installation:
+```powershell
+node --version
+npm --version
+```
 
-Happy coding!
+#### Step 4: Install Git via Chocolatey
+
+```powershell
+choco install git -y
+```
+
+Verify Git installation:
+```powershell
+git --version
+```
+
+---
+
+### Project Setup
+
+#### Step 1: Clone the Repository
+
+```powershell
+git clone https://github.com/NobinSijo7T/fake-news-detector.git
+cd fake-news-detector
+```
+
+#### Step 2: Backend Setup
+
+Navigate to the backend directory and install Python packages:
+
+```powershell
+cd app/FakeNewsDetectorAPI
+pip install -r requirements.txt
+```
+
+**Run Database Migrations:**
+
+```powershell
+python manage.py migrate
+```
+
+**Load Quiz Data (Optional):**
+
+```powershell
+python manage.py quiz_data_loader game_data/game_data.csv
+```
+
+#### Step 3: Frontend Setup
+
+Navigate to the frontend directory and install npm packages:
+
+```powershell
+cd ../fake-news-detector-frontend
+npm install
+```
+
+---
+
+### Running the Application
+
+#### Step 1: Start the Backend API
+
+Open a terminal in the project root and run:
+
+```powershell
+cd app/FakeNewsDetectorAPI
+python manage.py runserver
+```
+
+The API will be available at: `http://localhost:8000`
+
+#### Step 2: Start the Frontend
+
+Open a **new terminal** in the project root and run:
+
+```powershell
+cd app/fake-news-detector-frontend
+npm start
+```
+
+The application will automatically open in your browser at: `http://localhost:3000`
+
+If it doesn't open automatically, navigate to `http://localhost:3000` in your browser.
+
+---
+
+## 📦 Package Details
+
+### Backend Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| Django | 4.2.3 | Web framework |
+| djangorestframework | 3.14.0 | REST API toolkit |
+| django-cors-headers | 4.4.0 | Handle Cross-Origin Resource Sharing |
+| django-filter | 24.2 | Advanced filtering for API |
+| scikit-learn | Latest | Machine learning models |
+| requests | 2.32.3 | HTTP library for API calls |
+| beautifulsoup4 | Latest | HTML/XML parsing |
+| lxml | Latest | XML/HTML parser |
+| psycopg2-binary | Latest | PostgreSQL adapter (optional) |
+
+### Frontend Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| react | 18.2.0 | UI library |
+| react-dom | 18.2.0 | React DOM renderer |
+| react-router-dom | 6.15.0 | Client-side routing |
+| axios | 1.5.0 | HTTP client |
+| bootstrap | 5.3.1 | CSS framework |
+| react-bootstrap | 2.8.0 | Bootstrap components for React |
+| react-bootstrap-icons | 1.10.3 | Icon library |
+| js-cookie | 3.0.5 | Cookie management |
+| react-toastify | 9.1.3 | Toast notifications |
+| react-scripts | 5.0.1 | Build tooling |
+
+| react-scripts | 5.0.1 | Build tooling |
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! If you have ideas for new features, improvements, or bug fixes:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 🗺️ Roadmap
+
+- [ ] Enhanced ML models with deep learning (LSTM/BERT)
+- [ ] User authentication and profiles
+- [ ] Track quiz scores and progress
+- [ ] Browser extension for real-time news verification
+- [ ] Multi-language support
+- [ ] Advanced source credibility analysis
+- [ ] API rate limiting and caching
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📧 Contact
+
+For questions, suggestions, or issues:
+
+- **Email:** [dark_agent_437@protonmail.com](mailto:dark_agent_437@protonmail.com)
+- **Issues:** [GitHub Issues](https://github.com/NobinSijo7T/fake-news-detector/issues)
+
+---
+
+<div align="center">
+  <strong>Together, we can fight misinformation!</strong>
+  
+  Made with ❤️ by developers committed to truth and transparency
+  
+  ⭐ Star this repo if you find it useful!
+</div>
