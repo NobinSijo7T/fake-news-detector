@@ -4,12 +4,14 @@ import 'react-toastify/dist/ReactToastify.css';
 import Header from './header';
 import { Container, Form, Button } from 'react-bootstrap';
 import Axios from 'axios';
-import { Check2, X } from 'react-bootstrap-icons';
+import { Check2, X, ArrowLeft } from 'react-bootstrap-icons';
+import { useNavigate } from 'react-router-dom';
 
 
 function CheckByTitle() {
   document.title = 'News Guardian | Check news by title';
   let stage = 2;
+  const navigate = useNavigate();
   const [inputNewsTitle, setNewsTitle] = useState('');
   const [predictedValue, setPredictedValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -100,7 +102,18 @@ function CheckByTitle() {
   return (
     <>
       <Header activeContainer={stage} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      
       <Container fluid="lg" className="check-by-title-container">
+        <div className="back-button-container">
+          <Button 
+            variant="outline-primary" 
+            className="back-to-home-btn"
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft size={20} /> Back to Home
+          </Button>
+        </div>
+        
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3">
             <Form.Label className='frm-opalq'>News Title</Form.Label>
@@ -148,43 +161,70 @@ function CheckByTitle() {
       </Container>
       
       {detailedAnalysis && useMetaModel && detailedAnalysis.verdict && (
-        <Container className='detailed-analysis-container' style={{ marginTop: '2rem' }}>
+        <Container className='detailed-analysis-container' style={{ marginTop: '2rem', marginBottom: '3rem' }}>
           <div className="analysis-card">
-            <h4>Detailed Analysis</h4>
+            <div className="analysis-header">
+              <h3>🔍 AI-Powered Analysis</h3>
+              <p className="analysis-subtitle">Verified with real-time news sources</p>
+            </div>
+            
             <div className="analysis-content">
-              <div className="verdict-section">
-                <strong>Verdict:</strong> <span className={`verdict-${detailedAnalysis.verdict.toLowerCase()}`}>{detailedAnalysis.verdict}</span>
-              </div>
-              <div className="confidence-section">
-                <strong>Confidence:</strong> {detailedAnalysis.confidence}%
-                <div className="confidence-bar">
-                  <div 
-                    className="confidence-fill" 
-                    style={{ width: `${detailedAnalysis.confidence}%` }}
-                  ></div>
+              <div className="verdict-badge-section">
+                <div className={`verdict-badge verdict-${detailedAnalysis.verdict.toLowerCase()}`}>
+                  <span className="verdict-icon">
+                    {detailedAnalysis.verdict === 'TRUE' ? '✓' : detailedAnalysis.verdict === 'FALSE' ? '✗' : '?'}
+                  </span>
+                  <div className="verdict-text">
+                    <div className="verdict-label">Verdict</div>
+                    <div className="verdict-value">{detailedAnalysis.verdict}</div>
+                  </div>
+                </div>
+                
+                <div className="confidence-badge">
+                  <div className="confidence-circle">
+                    <svg className="confidence-svg" viewBox="0 0 36 36">
+                      <path className="confidence-bg"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      />
+                      <path className="confidence-progress"
+                        strokeDasharray={`${detailedAnalysis.confidence}, 100`}
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      />
+                      <text x="18" y="20.35" className="confidence-percentage">{detailedAnalysis.confidence}%</text>
+                    </svg>
+                  </div>
+                  <div className="confidence-label">Confidence</div>
                 </div>
               </div>
-              <div className="analysis-text">
-                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
-                  {detailedAnalysis.analysis}
-                </pre>
+              
+              <div className="analysis-details">
+                <div className="analysis-text">
+                  <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                    {detailedAnalysis.analysis}
+                  </pre>
+                </div>
               </div>
+              
               {detailedAnalysis.searchResults && detailedAnalysis.searchResults.length > 0 && (
                 <div className="search-results-section">
-                  <h5>Related News Sources:</h5>
-                  <ul className="search-results-list">
+                  <h5 className="sources-title">📰 Related News Sources:</h5>
+                  <div className="search-results-grid">
                     {detailedAnalysis.searchResults.map((result, idx) => (
-                      <li key={idx}>
-                        <strong>{result.title}</strong>
-                        <br />
-                        <small>Source: {result.source}</small>
-                        <br />
-                        <small>{result.snippet}</small>
-                        <br />
-                        <a href={result.link} target="_blank" rel="noopener noreferrer">Read more</a>
-                      </li>
+                      <div key={idx} className="source-card">
+                        <div className="source-number">{idx + 1}</div>
+                        <div className="source-content">
+                          <h6 className="source-title">{result.title}</h6>
+                          <div className="source-meta">
+                            <span className="source-badge">{result.source}</span>
+                          </div>
+                          <p className="source-snippet">{result.snippet}</p>
+                          <a href={result.link} target="_blank" rel="noopener noreferrer" className="source-link">
+                            Read full article →
+                          </a>
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
             </div>

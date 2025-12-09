@@ -3,10 +3,13 @@ import Header from './header';
 import Axios from 'axios';
 import { Container, Button } from 'react-bootstrap';
 import { ToastContainer, toast } from 'react-toastify';
+import { ArrowLeft } from 'react-bootstrap-icons';
+import { useNavigate } from 'react-router-dom';
 
 function NewsQuiz() {
   document.title = 'News Guardian | News Quiz';
   let stage = 3;
+  const navigate = useNavigate();
 
   const quizData = {
     id: null,
@@ -66,6 +69,15 @@ function NewsQuiz() {
     <>
       <Header activeContainer={stage} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
       <Container className='news-quiz-container' style={{marginBottom: '60px'}}>
+        <div className="back-button-container">
+          <Button 
+            variant="outline-primary" 
+            className="back-to-home-btn"
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft size={20} /> Back to Home
+          </Button>
+        </div>
         <div className='div-iqyla'>
           <h4>{newsForQuiz.news_title}</h4>
         </div>
