@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Header from './header';
@@ -13,6 +13,18 @@ function CheckByTitle() {
   const [inputNewsTitle, setNewsTitle] = useState('');
   const [predictedValue, setPredictedValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check for dark mode preference
+    const isDark = document.body.classList.contains('dark-mode');
+    setDarkMode(isDark);
+  }, []);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    document.body.classList.toggle('dark-mode');
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -52,7 +64,7 @@ function CheckByTitle() {
 
   return (
     <>
-      <Header activeContainer={stage} />
+      <Header activeContainer={stage} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
       <Container fluid="lg" className="check-by-title-container">
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3">

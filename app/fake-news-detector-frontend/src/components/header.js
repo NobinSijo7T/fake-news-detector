@@ -4,13 +4,13 @@ import { FiSend } from "react-icons/fi";
 import { LinkContainer } from 'react-router-bootstrap';
 
 function Header(props) {
-    const { activeContainer, darkMode, toggleDarkMode } = props;
+    const { darkMode, toggleDarkMode } = props;
 
     return (
         <header className="modern-header">
             <div className="header-content">
                 <div className="logo-section">
-                    <div className="logo-icon">NG</div>
+                    <img src="/logo.png" alt="News Guardian Logo" className="logo-image" />
                     <LinkContainer to='/'>
                         <span className="logo-text" style={{cursor: 'pointer'}}>News Guardian</span>
                     </LinkContainer>

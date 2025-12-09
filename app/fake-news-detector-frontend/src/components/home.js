@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from './header';
-import { Check2, X, PlayCircle, ArrowLeft, ArrowRight, ChevronDown, ChevronUp, ArrowClockwise } from 'react-bootstrap-icons';
+import { Check2, X, ArrowLeft, ArrowRight, ChevronDown, ChevronUp, ArrowClockwise } from 'react-bootstrap-icons';
 import Axios from 'axios';
 
 function Home() {
@@ -11,7 +10,6 @@ function Home() {
   const [liveNewsData, setLiveNewsData] = useState([]);
   const [mustSeeNews, setMustSeeNews] = useState([]);
   const [allNews, setAllNews] = useState([]);
-  const [activeCategory, setActiveCategory] = useState('All');
   const [activeRegion, setActiveRegion] = useState('All');
   const [activeTopic, setActiveTopic] = useState('All');
   const [activeVerification, setActiveVerification] = useState('All');
@@ -125,7 +123,7 @@ function Home() {
   const categories = ['Sport', 'Lifestyle', 'Arts', 'News'];
 
   // Filter news based on active filters
-  const applyFilters = (newsData) => {
+  const applyFilters = useCallback((newsData) => {
     let filtered = [...newsData];
 
     // Filter by region
@@ -175,7 +173,7 @@ function Home() {
     }
 
     return filtered;
-  };
+  }, [activeRegion, activeTopic, activeVerification]);
 
   // Update filtered news whenever filters or data changes
   useEffect(() => {
@@ -183,7 +181,7 @@ function Home() {
     setFilteredNews(filtered);
     setFeaturedIndex(0);
     setTrendyStartIndex(1);
-  }, [liveNewsData, activeRegion, activeTopic, activeVerification]);
+  }, [liveNewsData, activeRegion, activeTopic, activeVerification, applyFilters]);
 
   // Fetch India-specific news when India region is selected
   useEffect(() => {
@@ -210,7 +208,7 @@ function Home() {
   };
 
   // Function to fetch live news data
-  const fetchLiveNewsData = () => {
+  const fetchLiveNewsData = useCallback(() => {
     Axios.get('http://127.0.0.1:8000/api/live/')
       .then((response) => {
         if (response.data && response.data.length > 0) {
@@ -254,7 +252,7 @@ function Home() {
       .catch((error) => {
         console.error('Error', error);
       });    
-  };
+  }, []);
 
   // Fetch initial live news data on component mount
   useEffect(() => {
@@ -271,7 +269,7 @@ function Home() {
         clearInterval(intervalRef.current);
       }
     };
-  }, []);
+  }, [fetchLiveNewsData]);
 
   return (
     <>
@@ -509,23 +507,25 @@ function Home() {
             <h3 className="sidebar-title">Top Story</h3>
             
             {liveNewsData.slice(0, 5).map((news, index) => (
-              <div key={index} className="news-card">
+              <div key={index} className="story-item">
                 <img 
                   src={getImageUrl(news.img_url)} 
                   alt={news.title}
-                  className="news-card-image"
+                  className="story-image"
                   onError={handleImageError}
                 />
                 <div className="story-content">
-                  <div className="story-category">
-                    {news.section_name || 'News'} • {new Date(news.publication_date).toLocaleDateString()}
+                  <div>
+                    <div className="story-category">
+                      {news.section_name || 'News'} • {new Date(news.publication_date).toLocaleDateString()}
+                    </div>
+                    <h4 className="story-title">{news.title.substring(0, 80)}...</h4>
                   </div>
-                  <h4 className="story-title">{news.title.substring(0, 80)}...</h4>
-                  <div className="story-time">
+                  <div className="story-verification">
                     {news.prediction ? (
-                      <span style={{color: '#2E7D32', fontSize: '11px'}}>✓ Verified</span>
+                      <span className="verification-badge verified">✓ Verified</span>
                     ) : (
-                      <span style={{color: '#C62828', fontSize: '11px'}}>✗ Flagged</span>
+                      <span className="verification-badge flagged">✗ Flagged</span>
                     )}
                   </div>
                 </div>

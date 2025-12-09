@@ -17,10 +17,19 @@ function NewsQuiz() {
 
   const [newsForQuiz, setNewsForQuiz] = useState(quizData);
   const [selectedAnswer, setSelectedAnswer] = useState('');
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     fetchQuizData();
+    // Check for dark mode preference
+    const isDark = document.body.classList.contains('dark-mode');
+    setDarkMode(isDark);
   }, []); // Fetch initial quiz data on component mount
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    document.body.classList.toggle('dark-mode');
+  };
 
   const fetchQuizData = () => {
     Axios.get('http://127.0.0.1:8000/api/quiz/')
@@ -55,8 +64,8 @@ function NewsQuiz() {
 
   return (
     <>
-      <Header activeContainer={stage} />
-      <Container className='news-quiz-container'>
+      <Header activeContainer={stage} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      <Container className='news-quiz-container' style={{marginBottom: '60px'}}>
         <div className='div-iqyla'>
           <h4>{newsForQuiz.news_title}</h4>
         </div>
@@ -77,7 +86,7 @@ function NewsQuiz() {
                     checked={selectedAnswer === 'True'}
                     onChange={handleOptionChange}
                   />
-                  <label className="label" for="a">
+                  <label className="label" htmlFor="a">
                     <div className="indicator"></div>
                     <span className="text">Real News</span>
                   </label>
@@ -92,7 +101,7 @@ function NewsQuiz() {
                     checked={selectedAnswer === 'False'}
                     onChange={handleOptionChange}
                   />
-                  <label className="label" for="b">
+                  <label className="label" htmlFor="b">
                     <div className="indicator"></div>
                     <span className="text">Fake News</span>
                   </label>
@@ -102,7 +111,7 @@ function NewsQuiz() {
               <Button variant='primary' type='submit' onClick={checkAnswer} className='button-17'>
                 Ok
               </Button>
-              <Button onClick={getNewQuiz} variant='light' style={{ marginLeft: '10px' }} className='button-17'>
+              <Button onClick={getNewQuiz} variant='light' className='button-17'>
                 Get New Quiz
               </Button>
             </div>
