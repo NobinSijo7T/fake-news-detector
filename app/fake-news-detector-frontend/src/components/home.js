@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from './header';
-import { Check2, X, ArrowLeft, ArrowRight, ChevronDown, ChevronUp, ArrowClockwise } from 'react-bootstrap-icons';
+import { Check2, X, ArrowLeft, ArrowRight, ChevronDown, ChevronUp, BoxArrowUpRight } from 'react-bootstrap-icons';
 import Axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -25,6 +25,7 @@ function Home() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const intervalRef = useRef(null);
   const [filteredNews, setFilteredNews] = useState([]);
+  const [selectedNews, setSelectedNews] = useState(null);
 
   const CACHE_KEY_LIVE = 'news_guardian_live_news';
   const CACHE_KEY_MORE = 'news_guardian_more_news';
@@ -444,13 +445,6 @@ function Home() {
             <div className="section-header">
               <h2 className="section-title">Trendy News</h2>
               <div className="section-nav">
-                <button 
-                  className={`refresh-button ${isRefreshing ? 'spinning' : ''}`}
-                  onClick={handleManualRefresh}
-                  title="Refresh news"
-                >
-                  <ArrowClockwise size={18} />
-                </button>
                 <button className="nav-arrow" onClick={handleTrendyPrev}><ArrowLeft size={16} /></button>
                 <button className="nav-arrow" onClick={handleTrendyNext}><ArrowRight size={16} /></button>
               </div>
@@ -458,7 +452,12 @@ function Home() {
             
             <div className="news-grid">
               {filteredNews.slice(trendyStartIndex, trendyNewsExpanded ? trendyStartIndex + 18 : trendyStartIndex + 6).map((news, index) => (
-                <div key={index} className="news-card">
+                <div 
+                  key={index} 
+                  className="news-card"
+                  onClick={() => setSelectedNews(news)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <img 
                     src={getImageUrl(news.img_url)} 
                     alt={news.title}
@@ -621,6 +620,59 @@ function Home() {
           )}
         </aside>
       </div>
+
+      {/* News Detail Modal */}
+      {selectedNews && (
+        <div className="news-modal-overlay" onClick={() => setSelectedNews(null)}>
+          <div className="news-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="news-modal-header">
+              <button className="news-modal-close" onClick={() => setSelectedNews(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            <img 
+              src={getImageUrl(selectedNews.img_url)} 
+              alt={selectedNews.title}
+              className="news-modal-image"
+              onError={handleImageError}
+            />
+            <div className="news-modal-body">
+              <div className="news-modal-category">
+                {selectedNews.section_name || 'News'} • {new Date(selectedNews.publication_date).toLocaleDateString()}
+              </div>
+              <h2 className="news-modal-title">{selectedNews.title}</h2>
+              <div className="news-modal-badges">
+                {selectedNews.is_fact_check_article ? (
+                  <span className="prediction-badge fact-check">
+                    <Check2 size={12} /> Fact-Check
+                  </span>
+                ) : selectedNews.prediction ? (
+                  <span className="prediction-badge real">
+                    <Check2 size={12} /> Verified
+                  </span>
+                ) : (
+                  <span className="prediction-badge fake">
+                    <X size={12} /> Flagged
+                  </span>
+                )}
+                {selectedNews.source_credibility && selectedNews.source_credibility !== 'UNKNOWN' && (
+                  <span className={`credibility-badge ${selectedNews.source_credibility.toLowerCase().replace('_', '-')}`}>
+                    {selectedNews.source_credibility === 'FACT_CHECKER' ? 'FC' : selectedNews.source_credibility.charAt(0)}
+                  </span>
+                )}
+              </div>
+              <a 
+                href={selectedNews.web_url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="news-modal-read-more"
+              >
+                Read Full Article <BoxArrowUpRight size={18} />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
