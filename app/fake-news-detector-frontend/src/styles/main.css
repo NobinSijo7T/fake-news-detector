@@ -1703,3 +1703,165 @@ body.dark-mode .category-tab.active {
         display: none;
     }
 }
+
+/* Model Toggle Switch - Yellow & Animated */
+.model-toggle-switch {
+    margin: 24px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border-left: 4px solid #FFE500;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode .model-toggle-switch {
+    background: #2d2d2d;
+}
+
+.model-toggle-switch:hover {
+    box-shadow: 0 4px 12px rgba(255, 229, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.model-toggle-switch .toggle-container {
+    margin-bottom: 12px;
+}
+
+.model-toggle-switch .form-check {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    padding-left: 0;
+}
+
+.model-toggle-switch .form-check-input {
+    width: 64px;
+    height: 32px;
+    cursor: pointer;
+    background-color: #ddd;
+    border: none;
+    border-radius: 16px;
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+    margin: 0;
+    float: none;
+}
+
+.model-toggle-switch .form-check-input:focus {
+    box-shadow: 0 0 0 4px rgba(255, 229, 0, 0.3);
+    outline: none;
+    border: none;
+}
+
+.model-toggle-switch .form-check-input::before {
+    content: '';
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: white;
+    top: 3px;
+    left: 3px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.model-toggle-switch .form-check-input:checked {
+    background: linear-gradient(135deg, #FFE500 0%, #FFC107 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(255, 229, 0, 0.4), inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: togglePulse 0.6s ease;
+}
+
+@keyframes togglePulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.model-toggle-switch .form-check-input:checked::before {
+    left: 35px;
+    background: white;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideIn {
+    0% {
+        transform: translateX(-10px) scale(0.9);
+    }
+    50% {
+        transform: translateX(5px) scale(1.1);
+    }
+    100% {
+        transform: translateX(0) scale(1);
+    }
+}
+
+.model-toggle-switch .form-check-label {
+    font-weight: 700;
+    font-size: 16px;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+    flex: 1;
+    margin: 0;
+    padding-left: 0;
+}
+
+body.dark-mode .model-toggle-switch .form-check-label {
+    color: #e0e0e0;
+}
+
+.model-toggle-switch .form-check-input:checked ~ .form-check-label {
+    color: #1a1a1a;
+    animation: labelGlow 0.6s ease;
+}
+
+body.dark-mode .model-toggle-switch .form-check-input:checked ~ .form-check-label {
+    color: #FFE500;
+}
+
+@keyframes labelGlow {
+    0%, 100% {
+        text-shadow: none;
+    }
+    50% {
+        text-shadow: 0 0 10px rgba(255, 229, 0, 0.5);
+    }
+}
+
+.model-toggle-switch .toggle-description {
+    color: #666;
+    font-size: 14px;
+    display: block;
+    margin-left: 0;
+    padding-left: 0;
+    animation: fadeIn 0.5s ease;
+}
+
+body.dark-mode .model-toggle-switch .toggle-description {
+    color: #b0b0b0;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

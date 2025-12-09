@@ -4,6 +4,9 @@ Meta 4 Scout + SerpAPI integration for enhanced news verification
 from groq import Groq
 from serpapi import GoogleSearch
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class MetaNewsVerifier:
@@ -13,10 +16,16 @@ class MetaNewsVerifier:
         self.groq_api_key = os.getenv('GROQ_API_KEY', 'your-groq-api-key-here')
         self.serpapi_key = os.getenv('SERPAPI_KEY', 'your-serpapi-key-here')
         self.groq_client = Groq(api_key=self.groq_api_key)
+        
+        logger.info(f"MetaNewsVerifier initialized. GROQ key present: {bool(self.groq_api_key and self.groq_api_key != 'your-groq-api-key-here')}")
+        logger.info(f"SERPAPI key present: {bool(self.serpapi_key and self.serpapi_key != 'your-serpapi-key-here')}")
     
     def search_news(self, query):
         """Search for news using SerpAPI"""
         try:
+            print(f"🔍 Searching for news: {query}")
+            logger.info(f"Searching for news: {query}")
+            
             params = {
                 "engine": "google",
                 "q": query,
@@ -25,12 +34,24 @@ class MetaNewsVerifier:
                 "num": 5
             }
             
+            print(f"📡 SerpAPI params: engine={params['engine']}, tbm={params['tbm']}, num={params['num']}")
+            logger.info(f"SerpAPI params: engine={params['engine']}, tbm={params['tbm']}, num={params['num']}")
+            
             search = GoogleSearch(params)
             results = search.get_dict()
             
+            print(f"📦 SerpAPI raw response keys: {list(results.keys())}")
+            logger.info(f"SerpAPI raw response keys: {list(results.keys())}")
+            
             news_results = results.get("news_results", [])
             
+            print(f"📰 Found {len(news_results)} news results")
+            logger.info(f"Found {len(news_results)} news results")
+            
             if not news_results:
+                print("⚠️ No search results found")
+                return None, "No search results found for this news."
+                return None, "No search results found for this news."
                 return None, "No search results found for this news."
             
             # Format search results for the model
@@ -46,6 +67,7 @@ class MetaNewsVerifier:
             return formatted_results, None
             
         except Exception as e:
+            logger.error(f"Search error: {str(e)}")
             return None, f"Search error: {str(e)}"
     
     def analyze_with_meta(self, user_news, search_results):
