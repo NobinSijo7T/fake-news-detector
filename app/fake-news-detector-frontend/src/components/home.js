@@ -302,13 +302,22 @@ function Home() {
                   <h1 className="hero-title">{filteredNews[featuredIndex].title}</h1>
                   <div className="hero-meta">
                     <span>{new Date(filteredNews[featuredIndex].publication_date).toLocaleDateString()}</span>
-                    {filteredNews[featuredIndex].prediction ? (
+                    {filteredNews[featuredIndex].is_fact_check_article ? (
+                      <span className="prediction-badge fact-check">
+                        <Check2 size={14} /> Fact-Check Article
+                      </span>
+                    ) : filteredNews[featuredIndex].prediction ? (
                       <span className="prediction-badge real">
                         <Check2 size={14} /> Verified Real
                       </span>
                     ) : (
                       <span className="prediction-badge fake">
                         <X size={14} /> Flagged Fake
+                      </span>
+                    )}
+                    {filteredNews[featuredIndex].source_credibility && (
+                      <span className={`credibility-badge ${filteredNews[featuredIndex].source_credibility.toLowerCase()}`}>
+                        {filteredNews[featuredIndex].source_credibility === 'FACT_CHECKER' ? 'Fact Checker' : filteredNews[featuredIndex].source_credibility}
                       </span>
                     )}
                   </div>
@@ -405,15 +414,26 @@ function Home() {
                       {news.section_name || 'News'} • {new Date(news.publication_date).toLocaleDateString()}
                     </div>
                     <h3 className="news-card-title">{news.title}</h3>
-                    {news.prediction ? (
-                      <span className="prediction-badge real">
-                        <Check2 size={12} /> Real
-                      </span>
-                    ) : (
-                      <span className="prediction-badge fake">
-                        <X size={12} /> Fake
-                      </span>
-                    )}
+                    <div className="badge-container">
+                      {news.is_fact_check_article ? (
+                        <span className="prediction-badge fact-check">
+                          <Check2 size={12} /> Fact-Check
+                        </span>
+                      ) : news.prediction ? (
+                        <span className="prediction-badge real">
+                          <Check2 size={12} /> Verified
+                        </span>
+                      ) : (
+                        <span className="prediction-badge fake">
+                          <X size={12} /> Flagged
+                        </span>
+                      )}
+                      {news.source_credibility && news.source_credibility !== 'UNKNOWN' && (
+                        <span className={`credibility-badge ${news.source_credibility.toLowerCase().replace('_', '-')}`}>
+                          {news.source_credibility === 'FACT_CHECKER' ? 'FC' : news.source_credibility.charAt(0)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -462,15 +482,21 @@ function Home() {
                         {news.section_name || 'News'} • {new Date(news.publication_date).toLocaleDateString()}
                       </div>
                       <h3 className="news-card-title">{news.title}</h3>
-                      {news.prediction ? (
-                        <span className="prediction-badge real">
-                          <Check2 size={12} /> Real
-                        </span>
-                      ) : (
-                        <span className="prediction-badge fake">
-                          <X size={12} /> Fake
-                        </span>
-                      )}
+                      <div className="badge-container">
+                        {news.is_fact_check_article ? (
+                          <span className="prediction-badge fact-check">
+                            <Check2 size={12} /> Fact-Check
+                          </span>
+                        ) : news.prediction ? (
+                          <span className="prediction-badge real">
+                            <Check2 size={12} /> Verified
+                          </span>
+                        ) : (
+                          <span className="prediction-badge fake">
+                            <X size={12} /> Flagged
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -522,7 +548,9 @@ function Home() {
                     <h4 className="story-title">{news.title.substring(0, 80)}...</h4>
                   </div>
                   <div className="story-verification">
-                    {news.prediction ? (
+                    {news.is_fact_check_article ? (
+                      <span className="verification-badge fact-check">✓ Fact-Check</span>
+                    ) : news.prediction ? (
                       <span className="verification-badge verified">✓ Verified</span>
                     ) : (
                       <span className="verification-badge flagged">✗ Flagged</span>

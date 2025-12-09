@@ -1673,6 +1673,114 @@ body.dark-mode .category-tab.active {
     color: #C62828;
 }
 
+.prediction-badge.fact-check {
+    background: #E3F2FD;
+    color: #1565C0;
+    border: 1px solid #1976D2;
+}
+
+/* Badge Container */
+.badge-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+/* Source Credibility Badges */
+.credibility-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.credibility-badge.high {
+    background: #C8E6C9;
+    color: #1B5E20;
+}
+
+.credibility-badge.medium {
+    background: #FFF9C4;
+    color: #F57F17;
+}
+
+.credibility-badge.low {
+    background: #FFCCBC;
+    color: #BF360C;
+}
+
+.credibility-badge.fact-checker {
+    background: #B3E5FC;
+    color: #01579B;
+    border: 1px solid #0277BD;
+}
+
+.credibility-badge.unknown {
+    background: #E0E0E0;
+    color: #424242;
+}
+
+/* Verification Badge Styles */
+.verification-badge.fact-check {
+    background: #E3F2FD;
+    color: #1565C0;
+    border: 1px solid #1976D2;
+}
+
+/* Dark mode badge styles */
+body.dark-mode .prediction-badge.real {
+    background: #1B5E20;
+    color: #A5D6A7;
+}
+
+body.dark-mode .prediction-badge.fake {
+    background: #B71C1C;
+    color: #FFCDD2;
+}
+
+body.dark-mode .prediction-badge.fact-check {
+    background: #0D47A1;
+    color: #90CAF9;
+    border-color: #1565C0;
+}
+
+body.dark-mode .credibility-badge.high {
+    background: #2E7D32;
+    color: #C8E6C9;
+}
+
+body.dark-mode .credibility-badge.medium {
+    background: #F57F17;
+    color: #FFF9C4;
+}
+
+body.dark-mode .credibility-badge.low {
+    background: #BF360C;
+    color: #FFCCBC;
+}
+
+body.dark-mode .credibility-badge.fact-checker {
+    background: #01579B;
+    color: #B3E5FC;
+    border-color: #0277BD;
+}
+
+body.dark-mode .credibility-badge.unknown {
+    background: #424242;
+    color: #E0E0E0;
+}
+
+body.dark-mode .verification-badge.fact-check {
+    background: #0D47A1;
+    color: #90CAF9;
+    border-color: #1565C0;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
     .main-layout {
@@ -2035,7 +2143,7 @@ body.dark-mode .analysis-subtitle {
 .confidence-circle {
     width: 120px;
     height: 120px;
-    margin: 0 auto 0.5rem;
+    margin: 0 auto;
     position: relative;
 }
 
@@ -2069,22 +2177,25 @@ body.dark-mode .confidence-bg {
     fill: #1a1a1a;
     transform: rotate(90deg);
     transform-origin: center;
+    text-anchor: middle;
 }
 
 body.dark-mode .confidence-percentage {
-    fill: #FFE500;
+    fill: #e0e0e0;
 }
 
-.confidence-label {
-    font-size: 0.875rem;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+.confidence-label-svg {
+    font-size: 0.18em;
     font-weight: 600;
+    fill: #666;
+    transform: rotate(90deg);
+    transform-origin: center;
+    text-anchor: middle;
+    letter-spacing: 0.05em;
 }
 
-body.dark-mode .confidence-label {
-    color: #b0b0b0;
+body.dark-mode .confidence-label-svg {
+    fill: #b0b0b0;
 }
 
 @keyframes scaleIn {

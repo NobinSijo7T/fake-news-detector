@@ -5,6 +5,16 @@ from groq import Groq
 from serpapi import GoogleSearch
 import os
 import logging
+import sys
+
+# Add parent directory to path to import source_credibility module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from livenews.source_credibility import (
+    get_source_credibility,
+    check_if_fact_check_article,
+    FACT_CHECKING_SOURCES,
+    HIGH_CREDIBILITY_SOURCES
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +83,29 @@ class MetaNewsVerifier:
     def analyze_with_meta(self, user_news, search_results):
         """Analyze news using Meta 4 Scout model"""
         try:
+            # Analyze source credibility from search results
+            high_cred_sources = 0
+            fact_check_sources = 0
+            
+            for result in search_results:
+                link = result.get('link', '')
+                credibility = get_source_credibility(link)
+                if credibility == 'HIGH':
+                    high_cred_sources += 1
+                elif credibility == 'FACT_CHECKER':
+                    fact_check_sources += 1
+            
             # Create context from search results
             context = "Search Results:\n"
             for idx, result in enumerate(search_results, 1):
+                link = result.get('link', '')
+                credibility = get_source_credibility(link)
+                is_fact_check, _, _ = check_if_fact_check_article(link, result.get('title', ''))
+                
                 context += f"\n{idx}. {result['title']}\n"
-                context += f"   Source: {result['source']}\n"
+                context += f"   Source: {result['source']} (Credibility: {credibility})\n"
+                if is_fact_check:
+                    context += f"   [FACT-CHECK ARTICLE]\n"
                 context += f"   Snippet: {result['snippet']}\n"
             
             # Create prompt for the model
@@ -86,6 +114,12 @@ class MetaNewsVerifier:
 News Claim: "{user_news}"
 
 {context}
+
+IMPORTANT GUIDELINES:
+1. Articles from fact-checking websites (like AltNews, BOOM, AFP Fact Check) are DEBUNKING fake news - they are TRUE articles about FALSE claims
+2. High credibility sources (BBC, Reuters, The Guardian, etc.) are generally reliable
+3. Look for consensus among multiple credible sources
+4. Pay special attention to fact-check articles - they identify misinformation
 
 Based on the search results above, provide:
 1. A verdict: Is this claim TRUE, FALSE, or UNVERIFIABLE?
@@ -135,12 +169,20 @@ KEY FACTS: [Bullet points]"""
                 except:
                     confidence = 50
             
+            # Boost confidence if we have many high credibility sources
+            if high_cred_sources >= 3:
+                confidence = min(confidence + 10, 100)
+            
             return {
                 "prediction": verdict == "TRUE",
                 "verdict": verdict,
                 "confidence": confidence,
                 "detailed_analysis": response_text,
-                "search_results": search_results
+                "search_results": search_results,
+                "source_analysis": {
+                    "high_credibility_sources": high_cred_sources,
+                    "fact_check_sources": fact_check_sources
+                }
             }
             
         except Exception as e:
@@ -149,7 +191,11 @@ KEY FACTS: [Bullet points]"""
                 "verdict": "ERROR",
                 "confidence": 0,
                 "detailed_analysis": f"Error analyzing news: {str(e)}",
-                "search_results": search_results
+                "search_results": search_results,
+                "source_analysis": {
+                    "high_credibility_sources": 0,
+                    "fact_check_sources": 0
+                }
             }
     
     def verify_news(self, user_news):

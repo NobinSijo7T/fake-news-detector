@@ -190,10 +190,10 @@ function CheckByTitle() {
                         strokeDasharray={`${detailedAnalysis.confidence}, 100`}
                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       />
-                      <text x="18" y="20.35" className="confidence-percentage">{detailedAnalysis.confidence}%</text>
+                      <text x="18" y="16" className="confidence-percentage">{detailedAnalysis.confidence}%</text>
+                      <text x="18" y="22" className="confidence-label-svg">CONFIDENCE</text>
                     </svg>
                   </div>
-                  <div className="confidence-label">Confidence</div>
                 </div>
               </div>
               

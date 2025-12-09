@@ -10,6 +10,12 @@ from bs4 import BeautifulSoup
 from .models import LiveNews
 from .serializers import LiveNewsSerializer, LiveNewsDetailedSerializer
 from core.model import load_models
+from .source_credibility import (
+    get_source_credibility, 
+    check_if_fact_check_article, 
+    should_trust_prediction,
+    extract_domain
+)
 
 import threading
 import time
@@ -199,6 +205,106 @@ def get_times_of_india_news():
         print(f"Error in get_times_of_india_news: {e}")
         return []
 
+
+def get_altnews_fact_checks():
+    """Fetch fact-checking articles from AltNews"""
+    try:
+        news_articles = []
+        
+        # AltNews RSS feed
+        rss_url = "https://www.altnews.in/feed/"
+        
+        print(f"Fetching fact-checks from AltNews...")
+        response = requests.get(rss_url, timeout=10, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        
+        if response.status_code != 200:
+            print(f"Failed to fetch AltNews RSS: {response.status_code}")
+            return []
+        
+        soup = BeautifulSoup(response.content, 'xml')
+        items = soup.find_all('item')[:15]  # Get top 15 items
+        
+        for item in items:
+            try:
+                title = item.find('title')
+                title = title.get_text(strip=True) if title else None
+                
+                link = item.find('link')
+                link = link.get_text(strip=True) if link else None
+                
+                if not title or not link:
+                    continue
+                
+                # Get publication date
+                pub_date = item.find('pubDate')
+                if pub_date:
+                    try:
+                        pub_date_dt = parsedate_to_datetime(pub_date.get_text(strip=True))
+                        pub_date_str = pub_date_dt.isoformat()
+                    except:
+                        pub_date_str = datetime.now().isoformat()
+                else:
+                    pub_date_str = datetime.now().isoformat()
+                
+                # Extract image from description or media content
+                img_url = "https://via.placeholder.com/400x300/FF4444/FFFFFF?text=AltNews+Fact+Check"
+                
+                # Try media:content tag (common in WordPress feeds)
+                media_content = item.find('media:content')
+                if media_content and media_content.get('url'):
+                    img_url = media_content['url']
+                else:
+                    # Try enclosure tag
+                    enclosure = item.find('enclosure')
+                    if enclosure and enclosure.get('url'):
+                        img_url = enclosure['url']
+                    else:
+                        # Try description
+                        description = item.find('description')
+                        if description:
+                            desc_html = str(description)
+                            desc_soup = BeautifulSoup(desc_html, 'html.parser')
+                            img_tag = desc_soup.find('img')
+                            if img_tag:
+                                img_src = img_tag.get('src') or img_tag.get('data-src')
+                                if img_src and img_src.startswith('http'):
+                                    img_url = img_src
+                
+                # Get category
+                category_tag = item.find('category')
+                category = category_tag.get_text(strip=True) if category_tag else 'Fact Check'
+                
+                # Check for duplicates
+                if any(a['web_url'] == link for a in news_articles):
+                    continue
+                
+                news_articles.append({
+                    'title': title,
+                    'web_url': link,
+                    'img_url': img_url,
+                    'category': category,
+                    'section_id': 'altnews-factcheck',
+                    'section_name': 'AltNews Fact Check',
+                    'publication_date': pub_date_str,
+                    'type': 'article',
+                    'is_fact_check': True  # Mark as fact-check article
+                })
+                
+                print(f"Added AltNews fact-check: {title[:60]}...")
+                
+            except Exception as e:
+                print(f"Error parsing AltNews item: {e}")
+                continue
+        
+        print(f"Total AltNews fact-checks fetched: {len(news_articles)}")
+        return news_articles
+        
+    except Exception as e:
+        print(f"Error fetching AltNews: {e}")
+        return []
+
 def get_new_news_from_api_and_update():
     """Gets news from the guardian news using it's API and Onmanorama"""
     
@@ -232,7 +338,8 @@ def get_new_news_from_api_and_update():
                     'section_id': article["sectionId"],
                     'section_name': article["sectionName"],
                     'publication_date': article["webPublicationDate"],
-                    'type': article["type"]
+                    'type': article["type"],
+                    'is_fact_check': False
                 })
             except Exception as e:
                 print(f"Error processing Guardian article: {e}")
@@ -246,36 +353,61 @@ def get_new_news_from_api_and_update():
     toi_articles = get_times_of_india_news()
     print(f"Fetched {len(toi_articles)} articles from Times of India")
     
+    # Fetch from AltNews fact-checking
+    altnews_articles = get_altnews_fact_checks()
+    print(f"Fetched {len(altnews_articles)} fact-check articles from AltNews")
+    
     # Combine all articles
-    all_articles = guardian_articles + toi_articles
+    all_articles = guardian_articles + toi_articles + altnews_articles
     
     nb_model, vect_model = load_models()
 
     for article_data in all_articles:
         try:
             web_url_ = article_data['web_url']
+            title = article_data['title']
             
             if not LiveNews.objects.filter(web_url=web_url_).exists():
                 
-                vectorized_text = vect_model.transform([article_data['title']])
-                prediction = nb_model.predict(vectorized_text)
-                prediction_bool = True if prediction[0] == 1 else False
+                # Get ML prediction
+                vectorized_text = vect_model.transform([title])
+                ml_prediction = nb_model.predict(vectorized_text)
+                ml_prediction_bool = True if ml_prediction[0] == 1 else False
+                
+                # Get source credibility
+                source_credibility = get_source_credibility(web_url_)
+                source_domain = extract_domain(web_url_)
+                
+                # Check if it's a fact-check article
+                is_fact_check, fact_check_source, verdict = check_if_fact_check_article(web_url_, title)
+                
+                # Determine final prediction based on source credibility
+                final_prediction, reasoning = should_trust_prediction(web_url_, title, ml_prediction_bool)
+                
+                print(f"Article: {title[:50]}...")
+                print(f"  ML Prediction: {ml_prediction_bool}, Source: {source_credibility}")
+                print(f"  Is Fact-Check: {is_fact_check}, Final: {final_prediction}")
+                print(f"  Reasoning: {reasoning}")
                 
                 news_article = LiveNews(
-                    title=article_data['title'],
+                    title=title,
                     publication_date=article_data['publication_date'],
                     news_category=article_data['category'],
-                    prediction=prediction_bool,
+                    prediction=final_prediction,  # Use improved prediction
                     section_id=article_data['section_id'],
                     section_name=article_data['section_name'],
                     type=article_data['type'],
                     web_url=web_url_,
-                    img_url=article_data['img_url']
+                    img_url=article_data['img_url'],
+                    source_credibility=source_credibility,
+                    is_fact_check_article=is_fact_check,
+                    fact_check_verdict=verdict if is_fact_check else None,
+                    source_domain=source_domain
                 )
 
                 news_article.save()
                 articles_added += 1
-                print(f"Saved: {article_data['title'][:50]}...")
+                print(f"✓ Saved: {title[:50]}...")
         except Exception as e:
             print(f"Error saving article: {e}")
             continue
@@ -445,8 +577,12 @@ class IndiaNewsView(APIView):
             toi_articles = get_times_of_india_news()
             print(f"Fetched {len(toi_articles)} from Times of India")
             
+            # Fetch from AltNews (fact-checking)
+            altnews_articles = get_altnews_fact_checks()
+            print(f"Fetched {len(altnews_articles)} fact-checks from AltNews")
+            
             # Combine articles
-            all_articles = google_news_articles + toi_articles
+            all_articles = google_news_articles + toi_articles + altnews_articles
             
             # Load ML models
             nb_model, vect_model = load_models()
@@ -455,26 +591,46 @@ class IndiaNewsView(APIView):
             for article_data in all_articles:
                 try:
                     web_url_ = article_data['web_url']
+                    title = article_data['title']
                     
                     if not LiveNews.objects.filter(web_url=web_url_).exists():
-                        vectorized_text = vect_model.transform([article_data['title']])
-                        prediction = nb_model.predict(vectorized_text)
-                        prediction_bool = True if prediction[0] == 1 else False
+                        # Get ML prediction
+                        vectorized_text = vect_model.transform([title])
+                        ml_prediction = nb_model.predict(vectorized_text)
+                        ml_prediction_bool = True if ml_prediction[0] == 1 else False
+                        
+                        # Get source credibility
+                        source_credibility = get_source_credibility(web_url_)
+                        source_domain = extract_domain(web_url_)
+                        
+                        # Check if it's a fact-check article
+                        is_fact_check = article_data.get('is_fact_check', False)
+                        if not is_fact_check:
+                            is_fact_check, fact_check_source, verdict = check_if_fact_check_article(web_url_, title)
+                        else:
+                            verdict = 'FACT_CHECK'
+                        
+                        # Determine final prediction based on source credibility
+                        final_prediction, reasoning = should_trust_prediction(web_url_, title, ml_prediction_bool)
                         
                         news_article = LiveNews(
-                            title=article_data['title'],
+                            title=title,
                             publication_date=article_data['publication_date'],
                             news_category=article_data['category'],
-                            prediction=prediction_bool,
+                            prediction=final_prediction,
                             section_id=article_data['section_id'],
                             section_name=article_data['section_name'],
                             type=article_data['type'],
                             web_url=web_url_,
-                            img_url=article_data['img_url']
+                            img_url=article_data['img_url'],
+                            source_credibility=source_credibility,
+                            is_fact_check_article=is_fact_check,
+                            fact_check_verdict=verdict if is_fact_check else None,
+                            source_domain=source_domain
                         )
                         news_article.save()
                         articles_added += 1
-                        print(f"Saved: {article_data['title'][:50]}...")
+                        print(f"Saved: {title[:50]}...")
                 except Exception as e:
                     print(f"Error saving article: {e}")
                     continue
